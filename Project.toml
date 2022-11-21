@@ -3,6 +3,10 @@ uuid = "998763c9-5807-4081-8b95-f32419d2af94"
 authors = ["Alec Hoyland <alec.hoyland@posteo.net> and contributors"]
 version = "0.1.0"
 
+[deps]
+LibSndFile = "b13ce0c6-77b0-50c6-a2db-140568b8d1a5"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+
 [compat]
 julia = "1.7"
 

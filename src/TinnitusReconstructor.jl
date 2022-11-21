@@ -1,5 +1,9 @@
 module TinnitusReconstructor
 
-# Write your package code here.
+export f
+
+function f()
+    print("Hello, world!")
+end
 
 end
