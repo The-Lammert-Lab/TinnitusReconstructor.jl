@@ -8,6 +8,7 @@ LibSndFile = "b13ce0c6-77b0-50c6-a2db-140568b8d1a5"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
 [compat]
+Revise = "3"
 julia = "1.7"
 
 [extras]
