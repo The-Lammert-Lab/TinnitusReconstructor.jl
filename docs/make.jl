@@ -1,11 +1,13 @@
 using TinnitusReconstructor
 using Documenter
 
-DocMeta.setdocmeta!(TinnitusReconstructor, :DocTestSetup, :(using TinnitusReconstructor); recursive=true)
+DocMeta.setdocmeta!(
+    TinnitusReconstructor, :DocTestSetup, :(using TinnitusReconstructor); recursive=true
+)
 
 makedocs(;
     modules=[TinnitusReconstructor],
-    authors="Alec Hoyland <alec.hoyland@posteo.net> and contributors",
+    authors="Alec Hoyland <alec.hoyland@posteo.net> and Nelson Barnett <nbarnett@wpi.edu>",
     repo="https://github.com/alec-hoyland/TinnitusReconstructor.jl/blob/{commit}{path}#{line}",
     sitename="TinnitusReconstructor.jl",
     format=Documenter.HTML(;
@@ -14,12 +16,7 @@ makedocs(;
         edit_link="main",
         assets=String[],
     ),
-    pages=[
-        "Home" => "index.md",
-    ],
+    pages=["Home" => "index.md"],
 )
 
-deploydocs(;
-    repo="github.com/alec-hoyland/TinnitusReconstructor.jl",
-    devbranch="main",
-)
+deploydocs(; repo="github.com/alec-hoyland/TinnitusReconstructor.jl", devbranch="main")
