@@ -13,7 +13,11 @@ include("StimGens.jl")
 include("generate_stimuli.jl")
 
 export UniformPrior
-export present_stimulus, generate_stimuli_matrix
+export present_stimulus
+export generate_stimuli_matrix
+export spect2binnedrepr
+export subject_selection_process
+export cs, gs
 
 function present_stimulus(s::Stimgen)
     stimuli_matrix, Fs, _, _ = generate_stimuli_matrix(s)

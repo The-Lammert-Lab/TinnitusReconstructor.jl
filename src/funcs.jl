@@ -4,7 +4,11 @@ hz2mels(f) = 2595 * log10(1 + (f / 700))
 
 mels2hz(m) = 700 * (10^(m / 2595) - 1)
 
-"Scales audio signal from -1 to 1. Adapted from MATLAB's soundsc"
+"""
+    play_scaled_audio(x, Fs) 
+
+Scales audio signal from -1 to 1 then plays it. Adapted from MATLAB's soundsc.
+"""
 function play_scaled_audio(x, Fs)
 
     # Translated MATLAB
@@ -81,15 +85,23 @@ end
 
 cs_no_basis(responses, Phi, Gamma=32) = zhangpassivegamma(Phi, responses, Gamma)
 
-function subject_selection_process(target_signal, stimuli, n_samples=nothing)
+function subject_selection_process(
+    target_signal::AbstractVector{T}, stimuli::AbstractArray{T}, n_samples=nothing
+) where {T<:Real}
+    target_signal = vec(target_signal)
     isempty(stimuli) ? X = round.(rand(n_samples, length(target_signal))) : X = stimuli
 
     # Ideal selection
     e = X * target_signal
     y = -ones(Int64, size(e))
-    y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1 # α, β matches MATLAB, not Julia default.
+    y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
 
     return y, X
+end
+function subject_selection_process(
+    target_signal::AbstractArray{T}, stimuli::AbstractArray{T}, n_samples=nothing
+) where {T<:Real}
+    return subject_selection_process(vec(target_signal), stimuli, n_samples)
 end
 
 function wav2spect(audio_file::String, duration=0.5)
