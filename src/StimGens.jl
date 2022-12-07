@@ -31,9 +31,9 @@ struct UniformPrior <: BinnedStimgen
         @assert any(
             x -> x >= 0, [min_freq max_freq duration n_trials Fs n_bins min_bins max_bins]
         ) "All arguements must be greater than 0"
-        @assert min_freq >= max_freq "`min_freq` must be less than `max_freq`"
-        @assert min_bins > max_bins "`min_bins` cannot be greater than `max_bins`"
-        @assert max_bins > n_bins "`max_bins` cannot be greater than `n_bins`"
+        @assert min_freq <= max_freq "`min_freq` must be less than `max_freq`"
+        @assert min_bins < max_bins "`min_bins` cannot be greater than `max_bins`"
+        @assert max_bins < n_bins "`max_bins` cannot be greater than `n_bins`"
         return new(min_freq, max_freq, duration, n_trials, Fs, n_bins, min_bins, max_bins)
     end
 end
@@ -65,12 +65,18 @@ get_fs(s::Stimgen)::Int64 = s.Fs
 get_nfft(s::Stimgen)::Int64 = get_fs(s) * s.duration
 
 # Universal functions
-function subject_selection_process(s::Stimgen, signal)
+function subject_selection_process(s::Stimgen, signal::AbstractVector{T}) where {T<:Real}
+
+    # Convert to vector so quantile works on `e`. Could also extend Statistics.quantile().
+    signal = vec(signal)
     _, _, spect, binned_repr = generate_stimuli_matrix(s)
     e = spect'signal
     y = -ones(Int64, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
     return y, spect, binned_repr
+end
+function subject_selection_process(s::Stimgen, signal::AbstractArray{T}) where {T<:Real}
+    return subject_selection_process(s, vec(signal))
 end
 
 """
@@ -153,7 +159,7 @@ empty_spectrum(s::BinnedStimgen) = -100 * ones(Int64, get_nfft(s) ÷ 2, 1)
 
 function spect2binnedrepr(s::BinnedStimgen, T)
     binned_repr = zeros(s.n_bins, size(T, 2))
-    B = freq_bins(s)
+    B, = freq_bins(s)
 
     @assert length(T) == length(B)
 

@@ -21,7 +21,7 @@ end
 Crops an audio buffer to between `start` and `stop` in seconds.
 TODO: use Unitful to add dimensions to these values.
 """
-function crop_signal(audio::SampleBuf{T,I}; start=0, stop=1) where {T,I}
+function crop_signal(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
     fs = samplerate(audio)
     return audio[(Int(fs * start) + 1):(Int(fs * stop))]
 end
@@ -35,6 +35,18 @@ and finally compute and return the spectrogram.
 function wav2spect(audio_file::String; duration=0.5)
     audio = load(audio_file)
     audio = crop_signal(audio; start=0, stop=duration)
-    S = spectrogram(audio)
+
+    samples = length(audio)
+    fs = samplerate(audio)
+
+    S = spectrogram(
+        audio,
+        samples ÷ 8,
+        div(samples ÷ 8, 2);
+        nfft=(samples - 1) ÷ 2,
+        window=hamming,
+        fs=fs,
+    )
+    # S = spectrogram(audio)
     return S
 end
