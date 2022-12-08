@@ -56,9 +56,19 @@ function zhangpassivegamma(Phi, y, h)
     end
 end
 
+"""
+    gs(responses, Phi)
+
+Linear reverse correlation.
+"""
 gs(responses, Phi) = (1 / size(Phi, 2)) * Phi'responses
 
-function cs(responses, Phi, Gamma=32)
+"""
+    cs(responses, Phi, Gamma::Integer=32)
+
+Compressed sensing reverse correlation.
+"""
+function cs(responses, Phi, Gamma::Integer=32)
     n_samples = length(responses)
     len_signal = size(Phi, 2)
 
@@ -85,44 +95,81 @@ end
 
 cs_no_basis(responses, Phi, Gamma=32) = zhangpassivegamma(Phi, responses, Gamma)
 
+"""
+    subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}
+    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
+
+Idealized model of a subject performing the task.
+
+Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
+Return an `n_samples x 1` vector of `-1` for "no" and `1` for "yes".
+"""
+function subject_selection_process end
+
 function subject_selection_process(
-    target_signal::AbstractVector{T}, stimuli::AbstractArray{T}, n_samples=nothing
+    stimuli::AbstractArray{T}, target_signal::AbstractVector{T}
 ) where {T<:Real}
-    target_signal = vec(target_signal)
-    isempty(stimuli) ? X = round.(rand(n_samples, length(target_signal))) : X = stimuli
+    @assert(
+        !isempty(stimuli),
+        "Stimuli must be explicitly passed or generated via
+`subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}`"
+    )
 
     # Ideal selection
-    e = X * target_signal
+    e = stimuli * target_signal
     y = -ones(Int64, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
 
-    return y, X
-end
-function subject_selection_process(
-    target_signal::AbstractArray{T}, stimuli::AbstractArray{T}, n_samples=nothing
-) where {T<:Real}
-    return subject_selection_process(vec(target_signal), stimuli, n_samples)
+    return y, stimuli
 end
 
-function wav2spect(audio_file::String, duration=0.5)
+function subject_selection_process(
+    stimuli::AbstractArray{T}, target_signal::AbstractArray{T}
+) where {T<:Real}
+    return subject_selection_process(stimuli, vec(target_signal))
+end
+
+"""
+    crop_signal!(audio::SampleBuf{T, I}; start=0, stop=1) where {T, I}
+
+Crops an audio buffer to between `start` and `stop` in seconds.
+TODO: use Unitful to add dimensions to these values.
+"""
+function crop_signal!(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
+    fs = samplerate(audio)
+    audio.data = audio[(Int(fs * start) + 1):(Int(fs * stop))]
+    return audio
+end
+
+"""
+    crop_signal(audio::SampleBuf{T, I}; start=0, stop=1) where {T, I}
+
+Returns an audio buffer cropped to between `start` and `stop` in seconds.
+TODO: use Unitful to add dimensions to these values.
+
+See also [`crop_signal!`](@ref).
+"""
+function crop_signal(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
+    fs = samplerate(audio)
+    return audio[(Int(fs * start) + 1):(Int(fs * stop))]
+end
+
+"""
+    wav2spect(audio_file::String; duration=0.5)
+
+Load an audio file, crop it to `duration`,
+    then compute and return the Welch power spectral density estimate.
+"""
+function wav2spect(audio_file::String; duration=0.5)
     audio = load(audio_file)
+    crop_signal!(audio; start=0, stop=duration)
+
     samples = length(audio)
     fs = samplerate(audio)
 
-    if mod(samples, 2) != 0
-        audio = audio[1:(end - 1)]
-    end
-
-    audio = audio[1:round(Int, fs * duration)]
-
-    S = spectrogram(
-        audio,
-        samples ÷ 8,
-        div(samples ÷ 8, 2);
-        nfft=(samples - 1) ÷ 2,
-        window=hamming,
-        fs=fs,
+    S = welch_pgram(
+        audio, samples ÷ 4, div(samples ÷ 4, 2); nfft=samples - 1, fs=fs, window=hamming
     )
 
-    return mean(abs.(power(S)); dims=2), freq(S)
+    return S
 end
