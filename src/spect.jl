@@ -30,7 +30,7 @@ end
     wav2spect(audio_file::String; duration=0.5)
 
 Load an audio file, then crop it to `duration`
-and finally compute and return the spectrogram.
+and finally compute and return the Welch power spectral density estimate.
 """
 function wav2spect(audio_file::String; duration=0.5)
     audio = load(audio_file)
@@ -39,14 +39,14 @@ function wav2spect(audio_file::String; duration=0.5)
     samples = length(audio)
     fs = samplerate(audio)
 
-    S = spectrogram(
+    S = welch_pgram(
         audio,
-        samples ÷ 8,
-        div(samples ÷ 8, 2);
-        nfft=(samples - 1) ÷ 2,
-        window=hamming,
+        samples ÷ 4,
+        div(samples ÷ 4, 2);
+        nfft=length(audio) - 1,
         fs=fs,
+        window=hamming,
     )
-    # S = spectrogram(audio)
+
     return S
 end
