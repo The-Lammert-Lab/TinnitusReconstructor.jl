@@ -21,7 +21,7 @@ end
 Crops an audio buffer to between `start` and `stop` in seconds.
 TODO: use Unitful to add dimensions to these values.
 """
-function crop_signal(audio::SampleBuf{T,I}; start=0, stop=1) where {T,I}
+function crop_signal(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
     fs = samplerate(audio)
     return audio[(Int(fs * start) + 1):(Int(fs * stop))]
 end
@@ -30,11 +30,23 @@ end
     wav2spect(audio_file::String; duration=0.5)
 
 Load an audio file, then crop it to `duration`
-and finally compute and return the spectrogram.
+and finally compute and return the Welch power spectral density estimate.
 """
 function wav2spect(audio_file::String; duration=0.5)
     audio = load(audio_file)
     audio = crop_signal(audio; start=0, stop=duration)
-    S = spectrogram(audio)
+
+    samples = length(audio)
+    fs = samplerate(audio)
+
+    S = welch_pgram(
+        audio,
+        samples ÷ 4,
+        div(samples ÷ 4, 2);
+        nfft=length(audio) - 1,
+        fs=fs,
+        window=hamming,
+    )
+
     return S
 end
