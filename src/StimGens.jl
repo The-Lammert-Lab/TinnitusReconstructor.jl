@@ -3,19 +3,25 @@
 ## Type definitions
 
 #############################
-
+"Abstract supertype for all stimulus generation."
 abstract type Stimgen end
+
+"""
+    BinnedStimgen <: Stimgen
+
+Abstract supertype for all binned stimulus generation.
+"""
 abstract type BinnedStimgen <: Stimgen end
 
 struct UniformPrior <: BinnedStimgen
     min_freq::Real
     max_freq::Real
     duration::Real
-    n_trials::Integer
+    n_trials::Int
     Fs::Real
-    n_bins::Integer
-    min_bins::Integer
-    max_bins::Integer
+    n_bins::Int
+    min_bins::Int
+    max_bins::Int
 
     # Inner constructor to validate inputs
     function UniformPrior(
@@ -31,14 +37,31 @@ struct UniformPrior <: BinnedStimgen
         @assert any(
             x -> x >= 0, [min_freq max_freq duration n_trials Fs n_bins min_bins max_bins]
         ) "All arguements must be greater than 0"
-        @assert min_freq >= max_freq "`min_freq` must be less than `max_freq`"
-        @assert min_bins > max_bins "`min_bins` cannot be greater than `max_bins`"
-        @assert max_bins > n_bins "`max_bins` cannot be greater than `n_bins`"
+        @assert min_freq <= max_freq "`min_freq` must be less than `max_freq`"
+        @assert min_bins < max_bins "`min_bins` cannot be greater than `max_bins`"
+        @assert max_bins < n_bins "`max_bins` cannot be greater than `n_bins`"
         return new(min_freq, max_freq, duration, n_trials, Fs, n_bins, min_bins, max_bins)
     end
 end
 
-# Outer constructor for default values
+"""
+    UniformPrior(; kwargs...) <: BinnedStimgen
+
+Outer constructor for stimulus generation type in which 
+    the number of filled bins is selected from 
+    the Uniform distribution on the interval `[min_bins, max_bins]`.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `n_trials::Integer = 100`: The number of trials the subject will complete.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
+- `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
+"""
 function UniformPrior(;
     min_freq=100,
     max_freq=22e3,
@@ -61,20 +84,30 @@ end
 #############################
 
 # Getter functions
-get_fs(s::Stimgen)::Int64 = s.Fs
-get_nfft(s::Stimgen)::Int64 = get_fs(s) * s.duration
+get_fs(s::Stimgen)::Int = s.Fs
+get_nfft(s::Stimgen)::Int = get_fs(s) * s.duration
 
 # Universal functions
-function subject_selection_process(s::Stimgen, signal)
+function subject_selection_process(
+    s::Stimgen, target_signal::AbstractVector{T}
+) where {T<:Real}
     _, _, spect, binned_repr = generate_stimuli_matrix(s)
-    e = spect'signal
-    y = -ones(Int64, size(e))
+    e = spect'target_signal
+    y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
     return y, spect, binned_repr
 end
 
+# Convert target_signal to Vector if passed as an Array.
+function subject_selection_process(
+    s::Stimgen, target_signal::AbstractArray{T}
+) where {T<:Real}
+    return subject_selection_process(s, vec(target_signal))
+end
+
 """
-synthesize_audio(X, nfft)
+    synthesize_audio(X, nfft)
+
 Synthesize audio from spectrum, X
 """
 function synthesize_audio(X, nfft)
@@ -84,13 +117,18 @@ function synthesize_audio(X, nfft)
     return real.(ifft(ss)) #transform from freq to time domain
 end
 
+"""
+    generate_stimuli_matrix(s::Stimgen)
+
+Generate a stimuli matrix based on specifications in the stimgen type.
+"""
 function generate_stimuli_matrix(s::Stimgen)
     # Generate first stimulus
     stim1, Fs, spect, _ = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(Float64, length(stim1), s.n_trials)
-    spect_matrix = zeros(Int64, length(spect), s.n_trials)
+    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    spect_matrix = zeros(Int, length(spect), s.n_trials)
     stimuli_matrix[:, 1] = stim1
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
@@ -107,6 +145,12 @@ end
 
 #############################
 
+"""
+    freq_bins(s::BinnedStimgen)
+
+Generates a vector indicating which frequencies belong to the same bin,
+    following a tonotopic map of audible frequency perception.
+"""
 function freq_bins(s::BinnedStimgen)
     Fs = get_fs(s)
     nfft = get_nfft(s)
@@ -120,7 +164,7 @@ function freq_bins(s::BinnedStimgen)
         )
     binst = bintops[1:(end - 1)]
     binnd = bintops[2:end]
-    binnum = zeros(Int64, nfft ÷ 2, 1)
+    binnum = zeros(Int, nfft ÷ 2, 1)
     frequency_vector = collect(range(0, Fs ÷ 2, nfft ÷ 2))
 
     for i in 1:(s.n_bins)
@@ -132,12 +176,12 @@ end
 
 function generate_stimuli_matrix(s::BinnedStimgen)
     # Generate first stimulus
-    binned_repr_matrix = zeros(Int64, s.n_bins, s.n_trials)
+    binned_repr_matrix = zeros(Int, s.n_bins, s.n_trials)
     stim1, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(Float64, length(stim1), s.n_trials)
-    spect_matrix = zeros(Int64, length(spect), s.n_trials)
+    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    spect_matrix = zeros(Int, length(spect), s.n_trials)
     stimuli_matrix[:, 1] = stim1
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
@@ -149,16 +193,28 @@ function generate_stimuli_matrix(s::BinnedStimgen)
     return stimuli_matrix, Fs, spect_matrix, binned_repr_matrix
 end
 
-empty_spectrum(s::BinnedStimgen) = -100 * ones(Int64, get_nfft(s) ÷ 2, 1)
+"""
+    empty_spectrum(s::BinnedStimgen)
 
-function spect2binnedrepr(s::BinnedStimgen, T)
-    binned_repr = zeros(s.n_bins, size(T, 2))
-    B = freq_bins(s)
+Generate an `nfft x 1` vector of Ints, where all values are -100. 
+"""
+empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2, 1)
 
-    @assert length(T) == length(B)
+"""
+    spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
+
+Get the binned representation of the spectrum.
+ 
+Returns a vector containing the amplitude of the spectrum in each frequency bin.
+"""
+function spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
+    binned_repr = zeros(s.n_bins, size(spect, 2))
+    B, = freq_bins(s)
+
+    @assert length(spect) == length(B)
 
     for bin_num in 1:(s.n_bins)
-        a = T[B .== bin_num, :]
+        a = spect[B .== bin_num, :]
         binned_repr[bin_num, :] .= a[1, :]
     end
 
