@@ -56,7 +56,9 @@ end
 r_mean = mean(r_loop)
 r_std = std(r_loop)
 
-println("Linear r using read-in stimuli matrix = $(r_static[1])")
-println("Linear r using Julia wav2spect stimuli matrix = $(r_Julia[1])")
+println("Linear r using read-in stimuli matrix and target signal = $(r_static[1])")
+println(
+    "Linear r using read-in stimuli matrix and Julia wav2spect target signal = $(r_Julia[1])",
+)
 println("Mean r using a generated stimuli matrix for n = $n is $r_mean")
 println("Standard deviation of r using a generated stimuli matrix for n = $n is $r_std")

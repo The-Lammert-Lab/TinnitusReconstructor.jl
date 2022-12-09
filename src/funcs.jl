@@ -1,4 +1,4 @@
-import DSP: welch_pgram, spectrogram
+import DSP: stft
 
 hz2mels(f) = 2595 * log10(1 + (f / 700))
 
