@@ -1,4 +1,5 @@
-# Helper functions. Like tinnitus-project utils/
+import DSP: welch_pgram, spectrogram
+
 
 hz2mels(f) = 2595 * log10(1 + (f / 700))
 
@@ -74,7 +75,7 @@ function cs(responses, Phi, Gamma::Integer=32)
 
     Theta = zeros(n_samples, len_signal)
     for i in 1:len_signal
-        ek = zeros(Int64, len_signal, 1)
+        ek = zeros(Int, len_signal, 1)
         ek[i] = 1
         Psi = idct(ek)
         Theta[:, 1] .= Phi * Psi
@@ -84,7 +85,7 @@ function cs(responses, Phi, Gamma::Integer=32)
 
     x = zeros(len_signal, 1)
     for i in 1:len_signal
-        ek = zeros(Int64, len_signal, 1)
+        ek = zeros(Int, len_signal, 1)
         ek[i] = 1
         Psi = idct(ek)
         x .+= Psi * s[i]
@@ -117,12 +118,13 @@ function subject_selection_process(
 
     # Ideal selection
     e = stimuli * target_signal
-    y = -ones(Int64, size(e))
+    y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
 
     return y, stimuli
 end
 
+# Convert target_signal to a Vector if passed as an Array.
 function subject_selection_process(
     stimuli::AbstractArray{T}, target_signal::AbstractArray{T}
 ) where {T<:Real}
@@ -137,7 +139,7 @@ TODO: use Unitful to add dimensions to these values.
 """
 function crop_signal!(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
     fs = samplerate(audio)
-    audio.data = audio[(Int(fs * start) + 1):(Int(fs * stop))]
+    audio.data = audio.data[(Int(fs * start) + 1):(Int(fs * stop)), :]
     return audio
 end
 
@@ -154,6 +156,12 @@ function crop_signal(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
     return audio[(Int(fs * start) + 1):(Int(fs * stop))]
 end
 
+function DSP.stft(audio::AbstractSampleBuf{T,I}, args...; kwargs...) where {T,I}
+    s = float(vec(audio.data))
+    S = stft(s, args...; kwargs...)
+    return S
+end
+
 """
     wav2spect(audio_file::String; duration=0.5)
 
@@ -167,9 +175,9 @@ function wav2spect(audio_file::String; duration=0.5)
     samples = length(audio)
     fs = samplerate(audio)
 
-    S = welch_pgram(
+    S = stft(
         audio, samples ÷ 4, div(samples ÷ 4, 2); nfft=samples - 1, fs=fs, window=hamming
     )
 
-    return S
+    return mean(abs.(S); dims=2)
 end

@@ -15,7 +15,7 @@ include("generate_stimuli.jl")
 export UniformPrior
 export present_stimulus
 export generate_stimuli_matrix
-export spect2binnedrepr
+export spect2binnedrepr, wav2spect
 export subject_selection_process
 export cs, gs
 
