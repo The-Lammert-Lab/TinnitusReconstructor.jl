@@ -125,3 +125,7 @@ Julia, R, NumPy, all default to alpha = 1, beta = 1. What to use??
     This runs JuliaFormatter and submits a PR with the formatted code, rather than having the FormatCheck potentially fail.
 
     - Updated CompatHelper.yml from the source GitHub example.
+
+- **Would it be helpful to make binned representations and spectral representations into their own types?**
+    - This would allow for type matching assertations in things like the `subject_selection_process` 
+    - Find more examples of where this would be good before deciding.

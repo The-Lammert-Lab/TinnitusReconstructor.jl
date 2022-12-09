@@ -17,11 +17,11 @@ struct UniformPrior <: BinnedStimgen
     min_freq::Real
     max_freq::Real
     duration::Real
-    n_trials::Integer
+    n_trials::Int
     Fs::Real
-    n_bins::Integer
-    min_bins::Integer
-    max_bins::Integer
+    n_bins::Int
+    min_bins::Int
+    max_bins::Int
 
     # Inner constructor to validate inputs
     function UniformPrior(
@@ -84,8 +84,8 @@ end
 #############################
 
 # Getter functions
-get_fs(s::Stimgen)::Int64 = s.Fs
-get_nfft(s::Stimgen)::Int64 = get_fs(s) * s.duration
+get_fs(s::Stimgen)::Int = s.Fs
+get_nfft(s::Stimgen)::Int = get_fs(s) * s.duration
 
 # Universal functions
 function subject_selection_process(
@@ -93,11 +93,12 @@ function subject_selection_process(
 ) where {T<:Real}
     _, _, spect, binned_repr = generate_stimuli_matrix(s)
     e = spect'target_signal
-    y = -ones(Int64, size(e))
+    y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
     return y, spect, binned_repr
 end
 
+# Convert target_signal to Vector if passed as an Array.
 function subject_selection_process(
     s::Stimgen, target_signal::AbstractArray{T}
 ) where {T<:Real}
@@ -126,8 +127,8 @@ function generate_stimuli_matrix(s::Stimgen)
     stim1, Fs, spect, _ = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(Float64, length(stim1), s.n_trials)
-    spect_matrix = zeros(Int64, length(spect), s.n_trials)
+    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    spect_matrix = zeros(Int, length(spect), s.n_trials)
     stimuli_matrix[:, 1] = stim1
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
@@ -163,7 +164,7 @@ function freq_bins(s::BinnedStimgen)
         )
     binst = bintops[1:(end - 1)]
     binnd = bintops[2:end]
-    binnum = zeros(Int64, nfft ÷ 2, 1)
+    binnum = zeros(Int, nfft ÷ 2, 1)
     frequency_vector = collect(range(0, Fs ÷ 2, nfft ÷ 2))
 
     for i in 1:(s.n_bins)
@@ -175,12 +176,12 @@ end
 
 function generate_stimuli_matrix(s::BinnedStimgen)
     # Generate first stimulus
-    binned_repr_matrix = zeros(Int64, s.n_bins, s.n_trials)
+    binned_repr_matrix = zeros(Int, s.n_bins, s.n_trials)
     stim1, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(Float64, length(stim1), s.n_trials)
-    spect_matrix = zeros(Int64, length(spect), s.n_trials)
+    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    spect_matrix = zeros(Int, length(spect), s.n_trials)
     stimuli_matrix[:, 1] = stim1
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
@@ -195,9 +196,9 @@ end
 """
     empty_spectrum(s::BinnedStimgen)
 
-Generate an `nfft x 1` vector of Int64s, where all values are -100. 
+Generate an `nfft x 1` vector of Ints, where all values are -100. 
 """
-empty_spectrum(s::BinnedStimgen) = -100 * ones(Int64, get_nfft(s) ÷ 2, 1)
+empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2, 1)
 
 """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
