@@ -77,13 +77,17 @@ println(
     "Linear r using read-in stimuli matrix and Julia wav2spect target signal = $(r_Julia_lr[1])",
 )
 println("Mean linear r using a generated stimuli matrix for n = $n is $r_mean_lr")
-println("Standard deviation of linear r using a generated stimuli matrix for n = $n is $r_std_lr")
+println(
+    "Standard deviation of linear r using a generated stimuli matrix for n = $n is $r_std_lr",
+)
 
 println("----------")
 
 println("CS r using read-in stimuli matrix and target signal = $(r_static_cs[1])")
 println(
-    "CS r using read-in stimuli matrix and Julia wav2spect target signal = $(r_Julia_cs[1])",
+    "CS r using read-in stimuli matrix and Julia wav2spect target signal = $(r_Julia_cs[1])"
 )
 println("Mean CS r using a generated stimuli matrix for n = $n is $r_mean_cs")
-println("Standard deviation of CS r using a generated stimuli matrix for n = $n is $r_std_cs")
+println(
+    "Standard deviation of CS r using a generated stimuli matrix for n = $n is $r_std_cs"
+)
