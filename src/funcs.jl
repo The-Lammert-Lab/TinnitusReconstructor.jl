@@ -33,11 +33,13 @@ function play_scaled_audio(x, Fs)
 end
 
 function P(alpha, gamma)
-    beta = zeros(length(alpha), 1)
+    beta = zeros(length(alpha))
 
     ind = @. abs(alpha) > gamma
 
-    return @. beta[ind] = sign(alpha[ind]) * (abs(alpha[ind]) - gamma)
+    @. beta[ind] = sign(alpha[ind]) * (abs(alpha[ind]) - gamma)
+
+    return beta
 end
 
 function zhangpassivegamma(Phi, y, h)
@@ -74,17 +76,17 @@ function cs(responses, Phi, Gamma::Integer=32)
 
     Theta = zeros(n_samples, len_signal)
     for i in 1:len_signal
-        ek = zeros(Int, len_signal, 1)
+        ek = zeros(Int, len_signal)
         ek[i] = 1
         Psi = idct(ek)
-        Theta[:, 1] .= Phi * Psi
+        Theta[:, i] .= Phi * Psi
     end
 
     s = zhangpassivegamma(Theta, responses, Gamma)
 
-    x = zeros(len_signal, 1)
+    x = zeros(len_signal)
     for i in 1:len_signal
-        ek = zeros(Int, len_signal, 1)
+        ek = zeros(Int, len_signal)
         ek[i] = 1
         Psi = idct(ek)
         x .+= Psi * s[i]
