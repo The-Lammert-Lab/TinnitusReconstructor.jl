@@ -100,8 +100,9 @@ end
 
 # Convert target_signal to Vector if passed as an Array.
 function subject_selection_process(
-    s::Stimgen, target_signal::AbstractArray{T}
+    s::Stimgen, target_signal::AbstractMatrix{T}
 ) where {T<:Real}
+    @assert size(target_signal, 2) == 1 "Target signal must be a Vector or single-column Matrix."
     return subject_selection_process(s, vec(target_signal))
 end
 

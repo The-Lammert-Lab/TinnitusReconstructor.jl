@@ -97,7 +97,9 @@ cs_no_basis(responses, Phi, Gamma=32) = zhangpassivegamma(Phi, responses, Gamma)
 
 """
     subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}
+    subject_selection_process(s::Stimgen, target_signal::AbstractMatrix{T}) where {T<:Real}
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
+    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 
 Idealized model of a subject performing the task.
 
@@ -125,8 +127,9 @@ end
 
 # Convert target_signal to a Vector if passed as an Array.
 function subject_selection_process(
-    stimuli::AbstractArray{T}, target_signal::AbstractArray{T}
+    stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}
 ) where {T<:Real}
+    @assert size(target_signal, 2) == 1 "Target signal must be a Vector or single-column Matrix."
     return subject_selection_process(stimuli, vec(target_signal))
 end
 
