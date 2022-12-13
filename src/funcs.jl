@@ -35,7 +35,7 @@ end
 function soft_threshold(α, γ)
     β = zeros(length(α))
 
-    ind = @. abs() > γ
+    ind = @. abs(α) > γ
 
     @. β[ind] = sign(α[ind]) * (abs(α[ind]) - γ)
 
