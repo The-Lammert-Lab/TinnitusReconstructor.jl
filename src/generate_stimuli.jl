@@ -13,8 +13,8 @@ function generate_stimulus(s::UniformPrior)
     # sample from uniform distribution to get the number of bins to fill
     n_bins_to_fill = rand((s.min_bins):(s.max_bins))
 
-    filled_bins = zeros(Int64, n_bins_to_fill, 1)
-    bin_to_fill = zero(Int64)
+    filled_bins = zeros(Int, n_bins_to_fill, 1)
+    bin_to_fill = zero(Int)
 
     # fill the bins
     for i in 1:n_bins_to_fill

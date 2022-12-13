@@ -32,70 +32,70 @@ function play_scaled_audio(x, Fs)
     return nothing
 end
 
-function P(alpha, gamma)
-    beta = zeros(length(alpha))
+function soft_threshold(α, γ)
+    β = zeros(length(α))
 
-    ind = @. abs(alpha) > gamma
+    ind = @. abs() > γ
 
-    @. beta[ind] = sign(alpha[ind]) * (abs(alpha[ind]) - gamma)
+    @. β[ind] = sign(α[ind]) * (abs(α[ind]) - γ)
 
-    return beta
+    return β
 end
 
-function zhangpassivegamma(Phi, y, h)
-    m = size(Phi, 1)
-    n = size(Phi, 2)
+function zhangpassivegamma(Φ, y, h)
+    m = size(Φ, 1)
+    n = size(Φ, 2)
 
-    a = (1 / m) .* (Phi'y)
+    α = (1 / m) .* (Φ'y)
 
-    val = sort(abs.(a); rev=true)
-    gamma = val[h + 1]
+    val = sort(abs.(α); rev=true)
+    γ = val[h + 1]
 
-    if norm(a, Inf) <= gamma
+    if norm(α, Inf) <= γ
         return zeros(n, 1)
     else
-        return (1 / norm(P(a, gamma), 2)) * P(a, gamma)
+        return (1 / norm(soft_threshold(α, γ), 2)) * soft_threshold(α, γ)
     end
 end
 
 """
-    gs(responses, Phi)
+    gs(responses, Φ)
 
 Linear reverse correlation.
 """
-gs(responses, Phi) = (1 / size(Phi, 2)) * Phi'responses
+gs(responses, Φ) = (1 / size(Φ, 2)) * Φ'responses
 
 """
-    cs(responses, Phi, Gamma::Integer=32)
+    cs(responses, Φ, Γ::Integer=32)
 
 Compressed sensing reverse correlation.
 """
-function cs(responses, Phi, Gamma::Integer=32)
+function cs(responses, Φ, Γ::Integer=32)
     n_samples = length(responses)
-    len_signal = size(Phi, 2)
+    len_signal = size(Φ, 2)
 
-    Theta = zeros(n_samples, len_signal)
+    Θ = zeros(n_samples, len_signal)
     for i in 1:len_signal
         ek = zeros(Int, len_signal)
         ek[i] = 1
-        Psi = idct(ek)
-        Theta[:, i] .= Phi * Psi
+        Ψ = idct(ek)
+        Θ[:, i] .= Φ * Ψ
     end
 
-    s = zhangpassivegamma(Theta, responses, Gamma)
+    s = zhangpassivegamma(Θ, responses, Γ)
 
     x = zeros(len_signal)
     for i in 1:len_signal
         ek = zeros(Int, len_signal)
         ek[i] = 1
-        Psi = idct(ek)
-        x .+= Psi * s[i]
+        Ψ = idct(ek)
+        x .+= Ψ * s[i]
     end
 
     return x
 end
 
-cs_no_basis(responses, Phi, Gamma=32) = zhangpassivegamma(Phi, responses, Gamma)
+cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 
 """
     subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}
