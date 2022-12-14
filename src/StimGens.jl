@@ -152,7 +152,7 @@ end
 Generates a vector indicating which frequencies belong to the same bin,
     following a tonotopic map of audible frequency perception.
 """
-function freq_bins(s::BinnedStimgen)
+@memoize function freq_bins(s::BinnedStimgen)
     Fs = get_fs(s)
     nfft = get_nfft(s)
 
@@ -165,9 +165,10 @@ function freq_bins(s::BinnedStimgen)
         )
     binst = bintops[1:(end - 1)]
     binnd = bintops[2:end]
-    binnum = zeros(Int, nfft ÷ 2, 1)
+    binnum = zeros(Int, nfft ÷ 2)
     frequency_vector = collect(range(0, Fs ÷ 2, nfft ÷ 2))
 
+    # This is a slow point
     for i in 1:(s.n_bins)
         @. binnum[(frequency_vector <= binnd[i]) & (frequency_vector >= binst[i])] = i
     end

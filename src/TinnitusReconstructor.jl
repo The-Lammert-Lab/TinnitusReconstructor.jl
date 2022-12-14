@@ -7,6 +7,7 @@ using PortAudio, SampledSignals
 using FileIO
 using LibSndFile
 using DSP
+using Memoize
 
 include("funcs.jl")
 include("StimGens.jl")
@@ -20,6 +21,7 @@ export freq_bins
 export spect2binnedrepr, wav2spect
 export subject_selection_process
 export cs, gs
+export get_fs, get_nfft, mels2hz, hz2mels
 
 function present_stimulus(s::Stimgen)
     stimuli_matrix, Fs, _, _ = generate_stimuli_matrix(s)

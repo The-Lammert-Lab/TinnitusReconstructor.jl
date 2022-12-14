@@ -11,7 +11,7 @@ using Statistics
 
 stimgen = UniformPrior(; max_freq=13e3, n_bins=8, min_bins=3, max_bins=6)
 
-Gamma = 2
+Γ = 2
 
 ### Repeatable section with saved stimuli and spectral representation of Buzzing Tone.
 
@@ -30,7 +30,7 @@ responses_synth, = subject_selection_process(stimuli_matrix', binned_target_sign
 reconstruction_synth_lr = gs(responses_synth, stimuli_matrix')
 r_static_lr = cor(reconstruction_synth_lr, binned_target_signal)
 
-reconstruction_synth_cs = cs(responses_synth, stimuli_matrix', Gamma)
+reconstruction_synth_cs = cs(responses_synth, stimuli_matrix', Γ)
 r_static_cs = cor(reconstruction_synth_cs, binned_target_signal)
 
 ### Using Julia wav2spect.
@@ -47,7 +47,7 @@ responses_synth, = subject_selection_process(stimuli_matrix', binned_target_sign
 reconstruction_synth_lr = gs(responses_synth, stimuli_matrix')
 r_Julia_lr = cor(reconstruction_synth_lr, binned_target_signal)
 
-reconstruction_synth_cs = cs(responses_synth, stimuli_matrix', Gamma)
+reconstruction_synth_cs = cs(responses_synth, stimuli_matrix', Γ)
 r_Julia_cs = cor(reconstruction_synth_cs, binned_target_signal)
 
 ### Loop for statistics on randomly generated stimuli.
@@ -61,7 +61,7 @@ for i in 1:n
     r = cor(recon_lr, binned_target_signal)
     r_loop_lr[i] = r[1]
 
-    recon_cs = cs(y, stim', Gamma)
+    recon_cs = cs(y, stim', Γ)
     r = cor(recon_lr, binned_target_signal)
     r_loop_cs[i] = r[1]
 end
