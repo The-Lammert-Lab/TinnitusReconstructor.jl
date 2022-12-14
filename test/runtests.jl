@@ -5,7 +5,7 @@ using Test
 @testset "TinnitusReconstructor.jl" begin
     stimgen = UniformPrior(; max_freq = 13e3, n_trials = 2000)
 
-    audio_file = "ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
+    audio_file = "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
     audio = wav2spect(audio_file)
     target_signal = 10 * log10.(audio)
 
