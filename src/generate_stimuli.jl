@@ -7,33 +7,18 @@ function generate_stimulus(s::UniformPrior)
 
     # Generate Random Freq Spec in dB Acccording to Frequency Bin Index
 
-    # master list of frequency bins unfilled
-    frequency_bin_list = collect(1:(s.n_bins))
-
     # sample from uniform distribution to get the number of bins to fill
     n_bins_to_fill = rand((s.min_bins):(s.max_bins))
 
-    filled_bins = zeros(Int, n_bins_to_fill, 1)
-    bin_to_fill = zero(Int)
-
-    # fill the bins
-    for i in 1:n_bins_to_fill
-        # Select a bin at random from the list
-        random_bin_index = rand(1:(length(frequency_bin_list)))
-        bin_to_fill = frequency_bin_list[random_bin_index]
-        filled_bins[i] = bin_to_fill
-        # fill that bin
-        spect[binnum .== bin_to_fill] .= 0
-        # remove that bin from the master list
-        deleteat!(frequency_bin_list, frequency_bin_list .== bin_to_fill)
-    end
+    bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace=false)
+    [spect[binnum .== bins_to_fill[i]] .= 0 for i in 1:n_bins_to_fill]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = -20 * ones(s.n_bins, 1)
-    binned_repr[filled_bins] .= 0
+    binned_repr = -20 * ones(s.n_bins)
+    binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
 end

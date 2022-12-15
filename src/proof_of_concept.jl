@@ -52,7 +52,7 @@ r_Julia_cs = cor(reconstruction_synth_cs, binned_target_signal)
 
 ### Loop for statistics on randomly generated stimuli.
 
-n = 100
+n = 30
 r_loop_lr = zeros(n, 1)
 r_loop_cs = zeros(n, 1)
 for i in 1:n
