@@ -113,7 +113,7 @@ Synthesize audio from spectrum, X
 """
 function synthesize_audio(X, nfft)
     phase = 2π * (rand(nfft ÷ 2) .- 0.5) # Assign random phase to freq spec
-    s = @. (10^(X / 10)) * exp(phase * im) # Convert dB to amplitudes
+    s = @.. (10^(X / 10)) * exp(phase * im) # Convert dB to amplitudes
     ss = vcat(1, s)
     return irfft(ss, 2 * length(ss) - 1) #transform from freq to time domain
 end
@@ -170,7 +170,7 @@ Generates a vector indicating which frequencies belong to the same bin,
 
     # This is a slow point
     for i in 1:(s.n_bins)
-        @. binnum[(frequency_vector <= binnd[i]) & (frequency_vector >= binst[i])] = i
+        @.. binnum[(frequency_vector <= binnd[i]) & (frequency_vector >= binst[i])] = i
     end
 
     return binnum, Fs, nfft, frequency_vector
@@ -190,9 +190,6 @@ function generate_stimuli_matrix(s::BinnedStimgen)
         stimuli_matrix[:, ii], _, spect_matrix[:, ii], binned_repr_matrix[:, ii] = generate_stimulus(
             s
         )
-        # view(stimuli_matrix, :, ii), _, view(spect_matrix, :, ii), view(binned_repr_matrix, :, ii) = generate_stimulus(
-        #     s
-        # )
     end
 
     return stimuli_matrix, Fs, spect_matrix, binned_repr_matrix

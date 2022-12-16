@@ -2,14 +2,13 @@ module TinnitusReconstructor
 
 using FFTW
 using LinearAlgebra
-using Statistics
+using Statistics, StatsBase
 using PortAudio, SampledSignals
 using FileIO
 using LibSndFile
 using DSP
-using StaticArrays
-using Memoization
-using StatsBase
+using Memoize
+using FastBroadcast
 
 include("funcs.jl")
 include("StimGens.jl")
