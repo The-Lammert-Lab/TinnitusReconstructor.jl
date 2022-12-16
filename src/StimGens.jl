@@ -113,7 +113,7 @@ Synthesize audio from spectrum, X
 """
 function synthesize_audio(X, nfft)
     phase = 2π * (rand(nfft ÷ 2) .- 0.5) # Assign random phase to freq spec
-    s = @.. (10^(X / 10)) * exp(phase * im) # Convert dB to amplitudes
+    s = @.. (10^(X / 10)) * cis(phase) # Convert dB to amplitudes
     ss = vcat(1, s)
     return irfft(ss, 2 * length(ss) - 1) #transform from freq to time domain
 end
@@ -179,12 +179,12 @@ end
 function generate_stimuli_matrix(s::BinnedStimgen)
     # Generate first stimulus
     binned_repr_matrix = zeros(Int, s.n_bins, s.n_trials)
-    stim1, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
+    stim, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    stimuli_matrix = zeros(length(stim), s.n_trials)
     spect_matrix = zeros(Int, length(spect), s.n_trials)
-    stimuli_matrix[:, 1] = stim1
+    stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
         stimuli_matrix[:, ii], _, spect_matrix[:, ii], binned_repr_matrix[:, ii] = generate_stimulus(
@@ -200,7 +200,7 @@ end
 
 Generate an `nfft x 1` vector of Ints, where all values are -100. 
 """
-empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2, 1)
+empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2)
 
 """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
