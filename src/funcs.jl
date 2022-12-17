@@ -7,7 +7,7 @@ mels2hz(m) = 700 * (10^(m / 2595) - 1)
 """
     play_scaled_audio(x, Fs) 
 
-Scales audio signal from -1 to 1 then plays it. Adapted from MATLAB's soundsc.
+Scales audio signal from -1 to 1 then plays it. Adapted from MATLAB's soundsc().
 """
 function play_scaled_audio(x, Fs)
 
@@ -32,6 +32,11 @@ function play_scaled_audio(x, Fs)
     return nothing
 end
 
+"""
+    soft_threshold(α, γ)
+
+Soft thresholding operator for use in compressed sensing.
+"""
 function soft_threshold(α, γ)
     β = zeros(length(α))
 
@@ -42,7 +47,15 @@ function soft_threshold(α, γ)
     return β
 end
 
-function zhangpassivegamma(Φ, y, Γ)
+"""
+    zhangpassivegamma(Φ::AbstractArray{T}, y, Γ::Integer) where {T<:Real}
+
+Passive algorithm for 1-bit compressed sensing with no basis.
+
+# References
+- Zhang, L., Yi, J. and Jin, R., 2014, June. Efficient algorithms for robust one-bit compressive sensing. In *International Conference on Machine Learning* (pp. 820-828). PMLR.
+"""
+function zhangpassivegamma(Φ::AbstractArray{T}, y, Γ::Integer) where {T<:Real}
     m = size(Φ, 1)
     n = size(Φ, 2)
 
@@ -62,13 +75,21 @@ end
     gs(responses, Φ)
 
 Linear reverse correlation.
+
+# References
+- Gosselin, F. and Schyns, P.G., 2003. Superstitious perceptions reveal properties of internal representations. *Psychological science*, 14(5), pp.505-509.
 """
 gs(responses, Φ) = (1 / size(Φ, 2)) * Φ'responses
 
 """
     cs(responses, Φ, Γ::Integer=32)
 
-Compressed sensing reverse correlation.
+One-bit compressed sensing reverse correlation with basis.
+
+# References
+- Plan, Y. and Vershynin, R., 2012. Robust 1-bit compressed sensing and sparse logistic regression: A convex programming approach. *IEEE Transactions on Information Theory*, 59(1), pp.482-494.
+
+- Zhang, L., Yi, J. and Jin, R., 2014, June. Efficient algorithms for robust one-bit compressive sensing. In *International Conference on Machine Learning* (pp. 820-828). PMLR.
 """
 function cs(responses, Φ::AbstractArray{T}, Γ::Integer=32) where {T<:Real}
     n_samples = length(responses)
