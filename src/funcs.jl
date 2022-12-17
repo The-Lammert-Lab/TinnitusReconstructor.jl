@@ -37,19 +37,19 @@ function soft_threshold(α, γ)
 
     ind = @. abs(α) > γ
 
-    @. β[ind] = sign(α[ind]) * (abs(α[ind]) - γ)
+    @. β[ind] = @views sign(α[ind]) * (abs(α[ind]) - γ)
 
     return β
 end
 
-function zhangpassivegamma(Φ, y, h)
+function zhangpassivegamma(Φ, y, Γ)
     m = size(Φ, 1)
     n = size(Φ, 2)
 
-    α = (1 / m) .* (Φ'y)
+    α = (1 / m) * (Φ'y)
 
     val = sort(abs.(α); rev=true)
-    γ = val[h + 1]
+    γ = val[Γ + 1]
 
     if norm(α, Inf) <= γ
         return zeros(n, 1)
@@ -70,15 +70,18 @@ gs(responses, Φ) = (1 / size(Φ, 2)) * Φ'responses
 
 Compressed sensing reverse correlation.
 """
-function cs(responses, Φ, Γ::Integer=32)
+function cs(responses, Φ::AbstractArray{T}, Γ::Integer=32) where {T<:Real}
     n_samples = length(responses)
     len_signal = size(Φ, 2)
+
+    ek = zeros(Int, len_signal)
+    p = plan_idct!(ek)
 
     Θ = zeros(n_samples, len_signal)
     for i in 1:len_signal
         ek = zeros(Int, len_signal)
         ek[i] = 1
-        Ψ = idct(ek)
+        Ψ = p * ek
         Θ[:, i] .= Φ * Ψ
     end
 
@@ -88,7 +91,7 @@ function cs(responses, Φ, Γ::Integer=32)
     for i in 1:len_signal
         ek = zeros(Int, len_signal)
         ek[i] = 1
-        Ψ = idct(ek)
+        Ψ = p * ek
         x .+= Ψ * s[i]
     end
 

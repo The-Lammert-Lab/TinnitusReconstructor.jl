@@ -125,12 +125,12 @@ Generate a stimuli matrix based on specifications in the stimgen type.
 """
 function generate_stimuli_matrix(s::Stimgen)
     # Generate first stimulus
-    stim1, Fs, spect, _ = generate_stimulus(s)
+    stim, Fs, spect, _ = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    stimuli_matrix = zeros(length(stim), s.n_trials)
     spect_matrix = zeros(Int, length(spect), s.n_trials)
-    stimuli_matrix[:, 1] = stim1
+    stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
         stimuli_matrix[:, ii], _, spect_matrix[:, ii], _ = generate_stimulus(s)
