@@ -112,10 +112,10 @@ end
 Synthesize audio from spectrum, X
 """
 function synthesize_audio(X, nfft)
-    phase = 2π * (rand(nfft ÷ 2, 1) .- 0.5) # Assign random phase to freq spec
-    s = @. (10^(X / 10)) * exp(phase * im) # Convert dB to amplitudes
-    ss = vcat(1, s, conj(reverse(s; dims=1)))
-    return real.(ifft(ss)) #transform from freq to time domain
+    phase = 2π * (rand(nfft ÷ 2) .- 0.5) # Assign random phase to freq spec
+    s = @.. (10^(X / 10)) * cis(phase) # Convert dB to amplitudes
+    ss = vcat(1, s)
+    return irfft(ss, 2 * length(ss) - 1) #transform from freq to time domain
 end
 
 """
@@ -125,12 +125,12 @@ Generate a stimuli matrix based on specifications in the stimgen type.
 """
 function generate_stimuli_matrix(s::Stimgen)
     # Generate first stimulus
-    stim1, Fs, spect, _ = generate_stimulus(s)
+    stim, Fs, spect, _ = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    stimuli_matrix = zeros(length(stim), s.n_trials)
     spect_matrix = zeros(Int, length(spect), s.n_trials)
-    stimuli_matrix[:, 1] = stim1
+    stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
         stimuli_matrix[:, ii], _, spect_matrix[:, ii], _ = generate_stimulus(s)
@@ -152,7 +152,7 @@ end
 Generates a vector indicating which frequencies belong to the same bin,
     following a tonotopic map of audible frequency perception.
 """
-function freq_bins(s::BinnedStimgen)
+@memoize function freq_bins(s::BinnedStimgen)
     Fs = get_fs(s)
     nfft = get_nfft(s)
 
@@ -165,11 +165,12 @@ function freq_bins(s::BinnedStimgen)
         )
     binst = bintops[1:(end - 1)]
     binnd = bintops[2:end]
-    binnum = zeros(Int, nfft ÷ 2, 1)
+    binnum = zeros(Int, nfft ÷ 2)
     frequency_vector = collect(range(0, Fs ÷ 2, nfft ÷ 2))
 
+    # This is a slow point
     for i in 1:(s.n_bins)
-        @. binnum[(frequency_vector <= binnd[i]) & (frequency_vector >= binst[i])] = i
+        @.. binnum[(frequency_vector <= binnd[i]) & (frequency_vector >= binst[i])] = i
     end
 
     return binnum, Fs, nfft, frequency_vector
@@ -178,12 +179,12 @@ end
 function generate_stimuli_matrix(s::BinnedStimgen)
     # Generate first stimulus
     binned_repr_matrix = zeros(Int, s.n_bins, s.n_trials)
-    stim1, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
+    stim, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(length(stim1), s.n_trials)
+    stimuli_matrix = zeros(length(stim), s.n_trials)
     spect_matrix = zeros(Int, length(spect), s.n_trials)
-    stimuli_matrix[:, 1] = stim1
+    stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:(s.n_trials)
         stimuli_matrix[:, ii], _, spect_matrix[:, ii], binned_repr_matrix[:, ii] = generate_stimulus(
@@ -199,7 +200,7 @@ end
 
 Generate an `nfft x 1` vector of Ints, where all values are -100. 
 """
-empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2, 1)
+empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2)
 
 """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
