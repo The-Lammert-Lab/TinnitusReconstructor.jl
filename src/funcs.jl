@@ -194,7 +194,7 @@ end
     wav2spect(audio_file::String; duration=0.5)
 
 Load an audio file, crop it to `duration`,
-    then compute and return the Welch power spectral density estimate.
+    then compute and return the short time fast Fourier transform.
 """
 function wav2spect(audio_file::String; duration=0.5)
     audio = load(audio_file)
