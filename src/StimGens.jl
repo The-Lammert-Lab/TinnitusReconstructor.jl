@@ -205,9 +205,9 @@ empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2)
 """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
 
-Get the binned representation of the spectrum.
+Convert a spectral representation into a binned representation.
  
-Returns a vector containing the amplitude of the spectrum in each frequency bin.
+Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in each frequency bin.
 """
 function spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
     binned_repr = zeros(s.n_bins, size(spect, 2))
@@ -221,4 +221,22 @@ function spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
     end
 
     return binned_repr
+end
+
+"""
+    binnedrepr2spect(s::BinnedStimgen, binned_repr::AbstractArray{T}) where {T}
+
+Convert the binned representation into a spectral representation.
+
+Returns an `n_frequencies x n_trials` spectral array.
+"""
+function binnedrepr2spect(s::BinnedStimgen, binned_repr::AbstractArray{T}) where {T}
+    B, = freq_bins(s)
+    spect = -100 * ones(length(B), size(binned_repr, 2))
+
+    for bin_num in 1:(s.n_bins)
+        spect[B .== bin_num, :] .= repeat(binned_repr[[bin_num], :], sum(B .== bin_num), 1)
+    end
+
+    return spect
 end

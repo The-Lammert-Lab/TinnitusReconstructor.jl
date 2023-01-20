@@ -19,7 +19,7 @@ export present_stimulus
 export generate_stimuli_matrix
 export generate_stimulus, generate_stimulus_new
 export freq_bins
-export spect2binnedrepr, wav2spect
+export spect2binnedrepr, binnedrepr2spect, wav2spect
 export subject_selection_process
 export cs, gs
 export get_fs, get_nfft, mels2hz, hz2mels
