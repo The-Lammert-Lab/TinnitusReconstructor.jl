@@ -15,7 +15,7 @@ function generate_stimulus(s::UniformPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = -20 * ones(s.n_bins)
+    binned_repr = -100 * ones(s.n_bins)
     binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
