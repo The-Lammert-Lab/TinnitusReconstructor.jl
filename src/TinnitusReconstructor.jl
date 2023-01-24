@@ -16,6 +16,7 @@ include("generate_stimuli.jl")
 
 export UniformPrior
 export present_stimulus
+export play_scaled_audio
 export generate_stimuli_matrix
 export generate_stimulus, generate_stimulus_new
 export freq_bins
