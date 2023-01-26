@@ -3,7 +3,7 @@ using Statistics
 using Test
 
 @testset "TinnitusReconstructor.jl" begin
-    stimgen = UniformPrior(; max_freq=13e3, n_trials=2000)
+    stimgen = UniformPrior(; min_bins=30, max_bins=30, max_freq=13e3, n_trials=2000)
 
     audio_file = "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
     audio = wav2spect(audio_file)
