@@ -251,6 +251,7 @@ end
 
 Compute the gaussian kernel for `x` and `y`.
 This is the function
+    
 ``k_\sigma : \mathbb{R}^{2m} \times \mathbb{R}^{2m} \rightarrow \mathbb{R}, (x, y) \mapsto k_\sigma (x, y) = \exp \left ( - \frac{1}{2\sigma^2} ||x-y||^2 \right )`` 
 
 # Examples
@@ -259,11 +260,11 @@ julia> gaussian_kernel(1, 1)
 1.0
 ```
 """
-function gaussian_kernel(x, y, σ=1)
+function gaussian_kernel(x, y; σ=1)
     return @. exp(-1 / (2 * σ^2) * abs(x - y)^2)
 end
 
-"""
+@doc raw"""
     phase_to_mm(Φ)
 
 Convert a matrix of phases `Φ` to a measurement matrix via
@@ -276,7 +277,8 @@ phase_to_mm(Φ) = 1 / sqrt(size(Φ, 1)) * exp(1im * Φ)
 
 Stack real and imaginary parts of a complex vector `z`
 in a real vector `stk(z)`:
-``\mathrm{stk} : \mathbb{C}^m \rightarrow \mathbb{R}^{2m}, z \mapsto \mathrm{stk}(z) = \left[\mathcal{R}(z)^{\mathrm{T}}, \mathcal{I}(z)^{\mathrm{T}} \right]^{\mathrm{T}}
+
+``\mathrm{stk} : \mathbb{C}^m \rightarrow \mathbb{R}^{2m}, z \mapsto \mathrm{stk}(z) = \left[\mathcal{R}(z)^{\mathrm{T}}, \mathcal{I}(z)^{\mathrm{T}} \right]^{\mathrm{T}}``
 """
 function stk(z)
     return vcat(vec(real(z)'), vec(imag(z)'))

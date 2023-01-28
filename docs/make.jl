@@ -1,5 +1,6 @@
-using TinnitusReconstructor
+push!(LOAD_PATH, "..")
 using Documenter
+using TinnitusReconstructor
 
 DocMeta.setdocmeta!(
     TinnitusReconstructor, :DocTestSetup, :(using TinnitusReconstructor); recursive=true
