@@ -247,11 +247,11 @@ function mmd(x, y, σ=1)
 end
 
 @doc raw"""
-    gaussian_kernel(x, y, σ=1)
+    gaussian_kernel(x, y; σ=1)
 
 Compute the gaussian kernel for `x` and `y`.
 This is the function
-    
+
 ``k_\sigma : \mathbb{R}^{2m} \times \mathbb{R}^{2m} \rightarrow \mathbb{R}, (x, y) \mapsto k_\sigma (x, y) = \exp \left ( - \frac{1}{2\sigma^2} ||x-y||^2 \right )`` 
 
 # Examples
