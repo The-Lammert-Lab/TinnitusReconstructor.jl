@@ -256,7 +256,7 @@ This is the function
 
 # Examples
 ```jldoctest
-julia> gaussian_kernel(1, 1)
+julia> TinnitusReconstructor.gaussian_kernel(1, 1)
 1.0
 ```
 """
@@ -270,7 +270,7 @@ end
 Convert a matrix of phases `Φ` to a measurement matrix via
 ``\frac{1}{\sqrt{m}} \exp(i \Phi)``.
 """
-phase_to_mm(Φ) = 1 / sqrt(size(Φ, 1)) * exp(1im * Φ)
+phase_to_mm(Φ) = 1 / sqrt(size(Φ, 1)) * cis(Φ)
 
 @doc raw"""
     stk(z)
