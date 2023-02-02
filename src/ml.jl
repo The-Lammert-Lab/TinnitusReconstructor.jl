@@ -4,6 +4,7 @@ using Flux: create_bias
 using Functors
 import Base: show
 using LinearAlgebra
+using Random: AbstractRNG
 
 """
     mmd(x, y, σ=1)
@@ -102,11 +103,11 @@ struct TransformedDense{F,FF,M<:AbstractMatrix,B}
     bias::B
     σ::F
     σ2::FF
-    function Dense(
+    function TransformedDense(
         W::M, bias=true, σ::F=identity, σ2::FF=identity
     ) where {M<:AbstractMatrix,F,FF}
         b = create_bias(W, bias, size(W, 1))
-        return new{F,FF,M,typeof(b)}{W,b,σ,σ2}
+        return new{F,FF,M,typeof(b)}(W, b, σ, σ2)
     end
 end
 
@@ -140,3 +141,27 @@ function Base.show(io::IO, l::TransformedDense)
     return print(io, ")")
 end
 
+@doc raw"""
+    scaled_uniform([rng = Flux.default_rng_value()], size...; gain = 1) -> Array
+    scaled_uniform([rng], kw...) -> Function
+
+Return an `Array{Float32}` of the given `size` containing random numbers drawn from a uniform distribution
+on the interval ``gain * [0, 1]``.
+
+# Examples
+
+julia> round.(extrema(scaled_uniform(100, 10; gain=2π)), digits=3)
+(0.004, 6.282)
+
+julia> scaled_uniform(5) |> summary
+"5-element Vector{Float32}"
+"""
+function scaled_uniform(rng::AbstractRNG, dims::Integer...; gain::Real=1)
+    return (rand(rng, Float32, dims...)) .* gain * 1.0f0
+end
+function scaled_uniform(dims::Integer...; kw...)
+    return scaled_uniform(Flux.default_rng_value(), dims...; kw...)
+end
+function scaled_uniform(rng::AbstractRNG=Flux.default_rng_value(); init_kwargs...)
+    return (dims...; kwargs...) -> scaled_uniform(rng, dims...; init_kwargs..., kwargs...)
+end
