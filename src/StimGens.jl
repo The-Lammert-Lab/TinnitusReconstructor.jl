@@ -119,9 +119,9 @@ function synthesize_audio(X, nfft)
 end
 
 """
-    generate_stimuli_matrix(s::Stimgen)
+    generate_stimuli_matrix(s::Stimgen; n_trials::Integer=0)
 
-Generate a stimuli matrix based on specifications in the stimgen type.
+Generate n_trials or s.n_trials in a stimuli matrix based on specifications in the stimgen type.
 """
 function generate_stimuli_matrix(s::Stimgen; n_trials::Integer=0)
     if n_trials == 0
