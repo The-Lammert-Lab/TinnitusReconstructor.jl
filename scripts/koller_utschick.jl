@@ -65,9 +65,9 @@ function generate_data(n_training::T, m::T, n::T, p::T) where T <: Integer
     H /= sqrt(norm(H) / n_training)
 
     # Compute the label data
-    U = randn(n_training, m)
+    U = randn(Float32, n_training, m)
     for u in eachrow(U)
-        u = u / norm(u)
+        u .= u / norm(u)
     end
     return H, U
 end
