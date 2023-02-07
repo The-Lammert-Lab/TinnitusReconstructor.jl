@@ -130,6 +130,7 @@ cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 Idealized model of a subject performing the task.
 
 Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
+If `target_signal` is a matrix, it must be one dimensional because that method simply applys vec(target_signal).
 Return an `n_samples x 1` vector of `-1` for "no" and `1` for "yes".
 """
 function subject_selection_process end

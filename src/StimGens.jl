@@ -119,20 +119,24 @@ function synthesize_audio(X, nfft)
 end
 
 """
-    generate_stimuli_matrix(s::Stimgen)
+    generate_stimuli_matrix(s::Stimgen; n_trials::Integer=0)
 
-Generate a stimuli matrix based on specifications in the stimgen type.
+Generate n_trials or s.n_trials in a stimuli matrix based on specifications in the stimgen type.
 """
-function generate_stimuli_matrix(s::Stimgen)
+function generate_stimuli_matrix(s::Stimgen; n_trials::Integer=0)
+    if n_trials == 0
+        n_trials = s.n_trials
+    end
+
     # Generate first stimulus
     stim, Fs, spect, _ = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(length(stim), s.n_trials)
-    spect_matrix = zeros(Int, length(spect), s.n_trials)
+    stimuli_matrix = zeros(length(stim), n_trials)
+    spect_matrix = zeros(Int, length(spect), n_trials)
     stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
-    for ii in 2:(s.n_trials)
+    for ii in 2:(n_trials)
         stimuli_matrix[:, ii], _, spect_matrix[:, ii], _ = generate_stimulus(s)
     end
     binned_repr_matrix = nothing
@@ -176,17 +180,21 @@ Generates a vector indicating which frequencies belong to the same bin,
     return binnum, Fs, nfft, frequency_vector
 end
 
-function generate_stimuli_matrix(s::BinnedStimgen)
+function generate_stimuli_matrix(s::BinnedStimgen; n_trials::Integer=0)
+    if n_trials == 0
+        n_trials = s.n_trials
+    end
+
     # Generate first stimulus
-    binned_repr_matrix = zeros(Int, s.n_bins, s.n_trials)
+    binned_repr_matrix = zeros(Int, s.n_bins, n_trials)
     stim, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
 
     # Instantiate stimuli matrix
-    stimuli_matrix = zeros(length(stim), s.n_trials)
-    spect_matrix = zeros(Int, length(spect), s.n_trials)
+    stimuli_matrix = zeros(length(stim), n_trials)
+    spect_matrix = zeros(Int, length(spect), n_trials)
     stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
-    for ii in 2:(s.n_trials)
+    for ii in 2:(n_trials)
         stimuli_matrix[:, ii], _, spect_matrix[:, ii], binned_repr_matrix[:, ii] = generate_stimulus(
             s
         )

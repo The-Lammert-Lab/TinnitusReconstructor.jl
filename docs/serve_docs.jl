@@ -4,4 +4,4 @@ Pkg.activate(".")
 using LiveServer
 
 include("make.jl")
-serve(dir="docs/build/")
+serve(; dir="docs/build/")
