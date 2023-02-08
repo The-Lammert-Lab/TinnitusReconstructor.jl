@@ -122,8 +122,8 @@ end
 cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 
 """
-    subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}
-    subject_selection_process(s::Stimgen, target_signal::AbstractMatrix{T}) where {T<:Real}
+    subject_selection_process(s::SG, target_signal::AbstractVector{T}) where {SG<:Stimgen, T<:Real}
+    subject_selection_process(s::SG, target_signal::AbstractMatrix{T}) where {SG<:Stimgen, T<:Real}
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 
