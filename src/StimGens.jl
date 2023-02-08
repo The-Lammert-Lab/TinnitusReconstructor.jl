@@ -84,13 +84,13 @@ end
 #############################
 
 # Getter functions
-get_fs(s::Stimgen)::Int = s.Fs
-get_nfft(s::Stimgen)::Int = get_fs(s) * s.duration
+get_fs(s::SG) where {SG<:Stimgen} = convert(Int, s.Fs)
+get_nfft(s::SG) where {SG<:Stimgen} = convert(Int, get_fs(s) * s.duration)
 
 # Universal functions
 function subject_selection_process(
-    s::Stimgen, target_signal::AbstractVector{T}
-) where {T<:Real}
+    s::SG, target_signal::AbstractVector{T}
+) where {SG<:Stimgen,T<:Real}
     _, _, spect, binned_repr = generate_stimuli_matrix(s)
     e = spect'target_signal
     y = -ones(Int, size(e))
@@ -100,8 +100,8 @@ end
 
 # Convert target_signal to Vector if passed as an Array.
 function subject_selection_process(
-    s::Stimgen, target_signal::AbstractMatrix{T}
-) where {T<:Real}
+    s::SG, target_signal::AbstractMatrix{T}
+) where {SG<:Stimgen,T<:Real}
     @assert size(target_signal, 2) == 1 "Target signal must be a Vector or single-column Matrix."
     return subject_selection_process(s, vec(target_signal))
 end
@@ -120,11 +120,11 @@ end
 
 """
     generate_stimuli_matrix(s::Stimgen)
-    generate_stimuli_matrix(s::Stimgen; n_trials::Integer)
+    generate_stimuli_matrix(s::Stimgen, n_trials::Integer)
 
 Generate n_trials or s.n_trials in a stimuli matrix based on specifications in the stimgen type.
 """
-function generate_stimuli_matrix(s::Stimgen)
+function generate_stimuli_matrix(s::SG) where {SG<:Stimgen}
     # Generate first stimulus
     stim, Fs, spect, _ = generate_stimulus(s)
 
@@ -141,7 +141,7 @@ function generate_stimuli_matrix(s::Stimgen)
     return stimuli_matrix, Fs, spect_matrix, binned_repr_matrix
 end
 
-function generate_stimuli_matrix(s::Stimgen; n_trials::Integer)
+function generate_stimuli_matrix(s::SG, n_trials::I) where {SG<:Stimgen,I<:Integer}
     @assert n_trials > 1 "`n_trials` must be greater than 1. To generate one trial, use `generate_stimulus()`."
 
     # Generate first stimulus
@@ -172,7 +172,7 @@ end
 Generates a vector indicating which frequencies belong to the same bin,
     following a tonotopic map of audible frequency perception.
 """
-@memoize function freq_bins(s::BinnedStimgen)
+@memoize function freq_bins(s::BS) where {BS<:BinnedStimgen}
     Fs = get_fs(s)
     nfft = get_nfft(s)
 
@@ -196,7 +196,7 @@ Generates a vector indicating which frequencies belong to the same bin,
     return binnum, Fs, nfft, frequency_vector
 end
 
-function generate_stimuli_matrix(s::BinnedStimgen)
+function generate_stimuli_matrix(s::BS) where {BS<:BinnedStimgen}
     # Generate first stimulus
     binned_repr_matrix = zeros(Int, s.n_bins, s.n_trials)
     stim, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
@@ -215,7 +215,7 @@ function generate_stimuli_matrix(s::BinnedStimgen)
     return stimuli_matrix, Fs, spect_matrix, binned_repr_matrix
 end
 
-function generate_stimuli_matrix(s::BinnedStimgen; n_trials::Integer)
+function generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen,I<:Integer}
     @assert n_trials > 1 "`n_trials` must be greater than 1. To generate one trial, use `generate_stimulus()`."
 
     # Generate first stimulus
@@ -241,7 +241,7 @@ end
 
 Generate an `nfft x 1` vector of Ints, where all values are -100. 
 """
-empty_spectrum(s::BinnedStimgen) = -100 * ones(Int, get_nfft(s) ÷ 2)
+empty_spectrum(s::BS) where {BS<:BinnedStimgen} = -100 * ones(Int, get_nfft(s) ÷ 2)
 
 """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
@@ -250,7 +250,7 @@ Convert a spectral representation into a binned representation.
  
 Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in each frequency bin.
 """
-function spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {T}
+function spect2binnedrepr(s::BS, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
     binned_repr = zeros(s.n_bins, size(spect, 2))
     B, = freq_bins(s)
 
@@ -271,7 +271,7 @@ Convert the binned representation into a spectral representation.
 
 Returns an `n_frequencies x n_trials` spectral array.
 """
-function binnedrepr2spect(s::BinnedStimgen, binned_repr::AbstractArray{T}) where {T}
+function binnedrepr2spect(s::BS, binned_repr::AbstractArray{T}) where {BS<:BinnedStimgen,T}
     B, = freq_bins(s)
     spect = -100 * ones(length(B), size(binned_repr, 2))
 
