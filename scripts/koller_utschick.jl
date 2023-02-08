@@ -14,10 +14,13 @@ using TinnitusReconstructor
 using Random: AbstractRNG
 using LinearAlgebra
 using StatsBase: sample
+using ProgressMeter
 
 ## Dimensionality
-const m = 10
-const n = 2
+# const m = 32
+const m = 16
+# const n = 128
+const n = 32
 
 ## Hyperparameters
 
@@ -30,12 +33,17 @@ const decay = 0
 # Gaussian kernel standard deviation
 const σ = 2 # [2, 5, 10, 20, 40, 80]
 # Batch size
-const B = 128 # [150, 1500]
+const B = 16 # [150, 1500]
 
 ## Data parameters
 
+# const n_training = 50_000
+const n_training = 10_000
+const n_val = 10_000
+
 # sparsity
-p = 5 # TODO
+# const p = 5 # TODO
+const p = 1
 
 ## Useful functions
 
@@ -47,26 +55,28 @@ Compute the loss function for this model.
 loss(x, x̂) = TinnitusReconstructor.mmd(x, x̂, σ)
 
 """
-    generate_data(n_training::T, n::T, p::T) where T <: Integer
+    generate_data(n_samples::T, n::T, p::T) where T <: Integer
 
-Generate `n_training` training samples of length `n`
+Generate `n_samples` training samples of length `n`
 with sparsity `p`.
+The size of `H` is `n × n_samples`
+and the size of `U` is `m x n_samples`.
 Note that these samples are sparse in the standard basis (identity matrix).
 """
-function generate_data(n_training::T, m::T, n::T, p::T) where T <: Integer
+function generate_data(n_samples::T, m::T, n::T, p::T) where T <: Integer
     # Generate a Gaussian random matrix
-    H = randn(Float32, n_training, n) ./ p
+    H = randn(Float32, n, n_samples) ./ p
     # Set all but p indices in each row to zero
-    for h in eachrow(H)
+    for h in eachcol(H)
         indices = sample(1:n, n-p, replace=false)
         h[indices] .= 0
     end
     # Rescale
-    H /= sqrt(norm(H) / n_training)
+    H /= sqrt(norm(H) / n_samples)
 
     # Compute the label data
-    U = randn(Float32, n_training, m)
-    for u in eachrow(U)
+    U = randn(Float32, m, n_samples)
+    for u in eachcol(U)
         u .= u / norm(u)
     end
     return H, U
@@ -75,7 +85,7 @@ end
 ## Create the neural network
 model = Flux.Chain(
     TinnitusReconstructor.TransformedDense(
-        m => n, identity, cos; init=TinnitusReconstructor.scaled_uniform(; gain=2π)
+        n => m, identity, cos; init=TinnitusReconstructor.scaled_uniform(; gain=2π)
     ),
 )
 
@@ -85,4 +95,17 @@ opt_state = Flux.setup(AdamW(η, β, decay), model)
 
 ## Create data and batches
 
+H, U = generate_data(n_training, m, n, p)
+data = DataLoader((H, U), batchsize=B)
 
+## Training loop
+
+losses = []
+@showprogress 1 "loss" for (x, y) in data
+    this_loss, grads = Flux.withgradient(model) do m
+        ŷ = m(x)
+        loss(y, ŷ)
+    end
+    Flux.update!(opt_state, model, grads[1])
+    push!(losses, this_loss)
+end
