@@ -33,6 +33,18 @@ function play_scaled_audio(x, Fs)
 end
 
 """
+    synthesize_audio(X, nfft)
+
+Synthesize audio from spectrum, X
+"""
+function synthesize_audio(X, nfft)
+    phase = 2π * (rand(nfft ÷ 2) .- 0.5) # Assign random phase to freq spec
+    s = @.. (10^(X / 10)) * cis(phase) # Convert dB to amplitudes
+    ss = vcat(1, s)
+    return irfft(ss, 2 * length(ss) - 1) #transform from freq to time domain
+end
+
+"""
     soft_threshold(α, γ)
 
 Soft thresholding operator for use in compressed sensing.
@@ -130,7 +142,7 @@ cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 Idealized model of a subject performing the task.
 
 Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
-If `target_signal` is a matrix, it must be one dimensional because that method simply applys vec(target_signal).
+If `target_signal` is a matrix, it must be one dimensional because that method simply applies vec(target_signal).
 Return an `n_samples x 1` vector of `-1` for "no" and `1` for "yes".
 """
 function subject_selection_process end
@@ -141,7 +153,7 @@ function subject_selection_process(
     @assert(
         !isempty(stimuli),
         "Stimuli must be explicitly passed or generated via
-`subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}`"
+`subject_selection_process(s::SG, target_signal::AbstractVector{T}) where {SG<:Stimgen, T<:Real}`"
     )
 
     # Ideal selection

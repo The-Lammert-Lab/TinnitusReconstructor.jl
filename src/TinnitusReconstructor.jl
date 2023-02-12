@@ -12,7 +12,6 @@ using FastBroadcast
 
 include("funcs.jl")
 include("StimGens.jl")
-include("generate_stimuli.jl")
 
 export UniformPrior
 export present_stimulus
