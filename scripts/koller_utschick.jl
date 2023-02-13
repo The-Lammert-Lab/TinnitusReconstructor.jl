@@ -31,7 +31,7 @@ const β = (0.9, 0.999) # [0.9, 1] (K&U used ADAM not ADAMW)
 # weight decay
 const decay = 0
 # Gaussian kernel standard deviation
-const σ = 2 # [2, 5, 10, 20, 40, 80]
+const σs = [2, 5, 10, 20, 40, 80]
 # Batch size
 const B = 16 # [150, 1500]
 
@@ -52,7 +52,7 @@ const p = 1
 
 Compute the loss function for this model.
 """
-loss(x, x̂) = TinnitusReconstructor.mmd(x, x̂, σ)
+loss(x, x̂) = sum([TinnitusReconstructor.mmd(x, x̂, σ) for σ in σs])
 
 """
     generate_data(n_samples::T, n::T, p::T) where T <: Integer
