@@ -12,14 +12,13 @@ using FastBroadcast
 
 include("funcs.jl")
 include("StimGens.jl")
-include("generate_stimuli.jl")
 include("ml.jl")
 
 export UniformPrior
 export present_stimulus
 export play_scaled_audio
 export generate_stimuli_matrix
-export generate_stimulus, generate_stimulus_new
+export generate_stimulus
 export freq_bins
 export spect2binnedrepr, binnedrepr2spect, wav2spect
 export subject_selection_process

@@ -33,6 +33,18 @@ function play_scaled_audio(x, Fs)
 end
 
 """
+    synthesize_audio(X, nfft)
+
+Synthesize audio from spectrum, X
+"""
+function synthesize_audio(X, nfft)
+    phase = 2π * (rand(nfft ÷ 2) .- 0.5) # Assign random phase to freq spec
+    s = @.. (10^(X / 10)) * cis(phase) # Convert dB to amplitudes
+    ss = vcat(1, s)
+    return irfft(ss, 2 * length(ss) - 1) #transform from freq to time domain
+end
+
+"""
     soft_threshold(α, γ)
 
 Soft thresholding operator for use in compressed sensing.
@@ -122,14 +134,15 @@ end
 cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 
 """
-    subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}
-    subject_selection_process(s::Stimgen, target_signal::AbstractMatrix{T}) where {T<:Real}
+    subject_selection_process(s::SG, target_signal::AbstractVector{T}) where {SG<:Stimgen, T<:Real}
+    subject_selection_process(s::SG, target_signal::AbstractMatrix{T}) where {SG<:Stimgen, T<:Real}
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 
 Idealized model of a subject performing the task.
 
 Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
+If `target_signal` is a matrix, it must be one dimensional because that method simply applies vec(target_signal).
 Return an `n_samples x 1` vector of `-1` for "no" and `1` for "yes".
 """
 function subject_selection_process end
@@ -140,7 +153,7 @@ function subject_selection_process(
     @assert(
         !isempty(stimuli),
         "Stimuli must be explicitly passed or generated via
-`subject_selection_process(s::Stimgen, target_signal::AbstractVector{T}) where {T<:Real}`"
+`subject_selection_process(s::SG, target_signal::AbstractVector{T}) where {SG<:Stimgen, T<:Real}`"
     )
 
     # Ideal selection
@@ -208,4 +221,78 @@ function wav2spect(audio_file::String; duration=0.5)
     )
 
     return mean(abs.(S); dims=2)
+end
+
+"""
+    mmd(x, y, σ=1)
+
+Compute the maximum mean discrepancy (MMD)
+between `x` and `y` using a Gaussian kernel.
+
+# Examples
+TODO
+"""
+function mmd(x, y, σ=1)
+    M = length(x)
+    N = length(y)
+
+    mmd = 0
+
+    running_total = 0
+    for i in 1:M, j in 1:M
+        running_total += gaussian_kernel(x[i], x[j])
+    end
+    mmd += (running_total / M^2)
+
+    running_total = 0
+    for i in 1:M, j in 1:N
+        running_total += gaussian_kernel(x[i], y[j])
+    end
+    mmd -= (2 / (M * N) * running_total)
+
+    running_total = 0
+    for i in 1:N, j in 1:N
+        running_total += gaussian_kernel(y[i], y[j])
+    end
+    mmd += (running_total / N^2)
+
+    return mmd
+end
+
+@doc raw"""
+    gaussian_kernel(x, y; σ=1)
+
+Compute the gaussian kernel for `x` and `y`.
+This is the function
+
+``k_\sigma : \mathbb{R}^{2m} \times \mathbb{R}^{2m} \rightarrow \mathbb{R}, (x, y) \mapsto k_\sigma (x, y) = \exp \left ( - \frac{1}{2\sigma^2} ||x-y||^2 \right )`` 
+
+# Examples
+```jldoctest
+julia> TinnitusReconstructor.gaussian_kernel(1, 1)
+1.0
+```
+"""
+function gaussian_kernel(x, y; σ=1)
+    return @. exp(-1 / (2 * σ^2) * abs(x - y)^2)
+end
+
+@doc raw"""
+    phase_to_mm(Φ)
+
+Convert a matrix of phases `Φ` to a measurement matrix via
+``\frac{1}{\sqrt{m}} \exp(i \Phi)``.
+"""
+phase_to_mm(Φ) = 1 / sqrt(size(Φ, 1)) * cis(Φ)
+
+@doc raw"""
+    stk(z)
+
+Stack real and imaginary parts of a complex vector `z`
+in a real vector `stk(z)`:
+
+``\mathrm{stk} : \mathbb{C}^m \rightarrow \mathbb{R}^{2m}, z \mapsto \mathrm{stk}(z) = \left[\mathcal{R}(z)^{\mathrm{T}}, \mathcal{I}(z)^{\mathrm{T}} \right]^{\mathrm{T}}``
+"""
+function stk(z)
+    return vcat(vec(real(z)'), vec(imag(z)'))
 end
