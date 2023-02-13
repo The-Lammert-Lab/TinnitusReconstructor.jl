@@ -109,3 +109,12 @@ losses = []
     Flux.update!(opt_state, model, grads[1])
     push!(losses, this_loss)
 end
+
+## TODO
+# 1. Write signal to noise Function
+# 2. Write OMP function.
+# 3. Write testing loop that inputs noisy data with tunable noise parameter
+#    and returns the signal to noise as a function of noise variance.
+# 4. Implement hyperparameter tuning.
+# 5. Show that we can generate a measurement matrix that satisfies constraints
+#    and also has a high SNR.
