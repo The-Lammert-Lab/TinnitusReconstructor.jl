@@ -1,7 +1,5 @@
 """
-Script that loads the output of MATLAB wav2spect for 
-    ATA_Tinnitus_Buzzing_Tone_1sec.wav (saved as a csv)
-    and runs synthetic subject on it.
+Script that tests some core features.
 """
 
 using TinnitusReconstructor
@@ -13,6 +11,7 @@ using Statistics
 stimgen = UniformPrior(; max_freq=13e3, n_bins=8, min_bins=3, max_bins=6)
 
 Γ = 2
+n_trials = 100
 
 audio_file = "ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
 
@@ -26,7 +25,7 @@ n = 30
 r_loop_lr = zeros(n, 1)
 r_loop_cs = zeros(n, 1)
 for i in 1:n
-    y, _, stim = subject_selection_process(stimgen, target_signal)
+    y, _, stim = subject_selection_process(stimgen, target_signal, n_trials)
     recon_lr = gs(y, stim')
     r = cor(recon_lr, binned_target_signal)
     r_loop_lr[i] = r[1]
