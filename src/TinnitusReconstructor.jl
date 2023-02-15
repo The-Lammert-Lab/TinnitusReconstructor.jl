@@ -12,12 +12,13 @@ using FastBroadcast
 
 include("funcs.jl")
 include("StimGens.jl")
+include("ml.jl")
 
 export UniformPrior
 export present_stimulus
 export play_scaled_audio
 export generate_stimuli_matrix
-export generate_stimulus, generate_stimulus_new
+export generate_stimulus
 export freq_bins
 export spect2binnedrepr, binnedrepr2spect, wav2spect
 export subject_selection_process
@@ -26,7 +27,7 @@ export get_fs, get_nfft, mels2hz, hz2mels
 export empty_spectrum
 export synthesize_audio
 export crop_signal, crop_signal!
-export mmd, stk, phase_to_mm
+export mmd, stk, phase_to_mm, TransformedDense, scaled_uniform
 
 function present_stimulus(s::Stimgen)
     stimuli_matrix, Fs, _, _ = generate_stimuli_matrix(s)
