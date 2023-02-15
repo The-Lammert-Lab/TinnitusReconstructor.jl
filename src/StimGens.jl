@@ -80,7 +80,17 @@ end
 #############################
 
 # Getter functions
-get_fs(s::SG) where {SG<:Stimgen} = convert(Int, s.Fs)
+"""
+    get_fs(s::SG) where {SG<:Stimgen}
+
+Return the number of samples per second.
+"""
+get_fs(s::SG) where {SG<:Stimgen} = s.Fs
+"""
+    get_nfft(s::SG) where {SG<:Stimgen}
+
+Return the number of FFT points.
+"""
 get_nfft(s::SG) where {SG<:Stimgen} = convert(Int, get_fs(s) * s.duration)
 
 # Universal functions
