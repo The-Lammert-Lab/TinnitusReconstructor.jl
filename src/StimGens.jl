@@ -32,9 +32,7 @@ struct UniformPrior <: BinnedStimgen
         min_bins::Integer,
         max_bins::Integer,
     )
-        @assert any(
-            x -> x >= 0, [min_freq max_freq duration Fs n_bins min_bins max_bins]
-        ) "All arguements must be greater than 0"
+        @assert any(x -> x >= 0, [min_freq max_freq duration Fs n_bins min_bins max_bins]) "All arguements must be greater than 0"
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`"
         @assert min_bins <= max_bins "`min_bins` cannot be greater than `max_bins`"
         @assert max_bins <= n_bins "`max_bins` cannot be greater than `n_bins`"
@@ -68,9 +66,7 @@ function UniformPrior(;
     min_bins=10,
     max_bins=50,
 )
-    return UniformPrior(
-        min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins
-    )
+    return UniformPrior(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
 end
 
 #############################
