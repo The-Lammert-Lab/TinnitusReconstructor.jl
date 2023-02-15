@@ -16,7 +16,9 @@ using Test
     recon = gs(responses, stim')
     r = cor(recon, binned_target_signal)
 
-    stimuli_matrix, Fs, spect_matrix, binned_repr_matrix = generate_stimuli_matrix(stimgen, n_trials)
+    stimuli_matrix, Fs, spect_matrix, binned_repr_matrix = generate_stimuli_matrix(
+        stimgen, n_trials
+    )
 
     @test size(binned_target_signal) == (stimgen.n_bins, 1)
     @test r[1] >= 0.75
