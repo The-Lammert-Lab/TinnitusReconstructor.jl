@@ -63,12 +63,12 @@ The size of `H` is `n × n_samples`
 and the size of `U` is `m x n_samples`.
 Note that these samples are sparse in the standard basis (identity matrix).
 """
-function generate_data(n_samples::T, m::T, n::T, p::T) where T <: Integer
+function generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
     # Generate a Gaussian random matrix
     H = randn(Float32, n, n_samples) ./ p
     # Set all but p indices in each row to zero
     for h in eachcol(H)
-        indices = sample(1:n, n-p, replace=false)
+        indices = sample(1:n, n - p; replace=false)
         h[indices] .= 0
     end
     # Rescale
@@ -96,7 +96,7 @@ opt_state = Flux.setup(AdamW(η, β, decay), model)
 ## Create data and batches
 
 H, U = generate_data(n_training, m, n, p)
-data = DataLoader((H, U), batchsize=B)
+data = DataLoader((H, U); batchsize=B)
 
 ## Training loop
 
