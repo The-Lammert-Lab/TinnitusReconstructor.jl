@@ -32,9 +32,7 @@ struct UniformPrior <: BinnedStimgen
         min_bins::Integer,
         max_bins::Integer,
     )
-        @assert any(
-            x -> x >= 0, [min_freq max_freq duration Fs n_bins min_bins max_bins]
-        ) "All arguements must be greater than 0"
+        @assert any(x -> x >= 0, [min_freq max_freq duration Fs n_bins min_bins max_bins]) "All arguements must be greater than 0"
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`"
         @assert min_bins <= max_bins "`min_bins` cannot be greater than `max_bins`"
         @assert max_bins <= n_bins "`max_bins` cannot be greater than `n_bins`"
@@ -68,9 +66,7 @@ function UniformPrior(;
     min_bins=10,
     max_bins=50,
 )
-    return UniformPrior(
-        min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins
-    )
+    return UniformPrior(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
 end
 
 #############################
@@ -80,18 +76,29 @@ end
 #############################
 
 # Getter functions
-"""
-    get_fs(s::SG) where {SG<:Stimgen}
+@doc """
+    fs(s::SG) where {SG<:Stimgen}
 
 Return the number of samples per second.
 """
-get_fs(s::SG) where {SG<:Stimgen} = s.Fs
-"""
-    get_nfft(s::SG) where {SG<:Stimgen}
+fs(s::SG) where {SG<:Stimgen} = s.Fs
 
-Return the number of FFT points.
+@doc """
+    nsamples(s::SG) where {SG<:Stimgen}
+
+Return the number of samples as an Integer.
+This means that the product `fs(s) * s.duration` must be an Integer
+or an `InexactError` will be thrown.
+
+# Examples
+```jldoctest
+julia> s = UniformPrior(;Fs=44.1e3, duration=0.5); nsamples(s)
+22050
+
+julia> s = UniformPrior(;Fs=44.1e3, duration=0.7); nsamples(s)
+ERROR: InexactError: Int64(30869.999999999996)
 """
-get_nfft(s::SG) where {SG<:Stimgen} = convert(Int, get_fs(s) * s.duration)
+nsamples(s::SG) where {SG<:Stimgen} = convert(Int, fs(s) * s.duration)
 
 # Universal functions
 function subject_selection_process(
@@ -112,9 +119,8 @@ function subject_selection_process(
     return subject_selection_process(s, vec(target_signal), n_trials)
 end
 
-"""
+@doc """
     generate_stimuli_matrix(s::SG, n_trials::I) where {SG<:Stimgen, I<:Integer}
-    generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen, I<:Integer}
 
 Generate `n_trials` of stimuli based on specifications in the stimgen type.
 
@@ -140,6 +146,13 @@ function generate_stimuli_matrix(s::SG, n_trials::I) where {SG<:Stimgen,I<:Integ
     return stimuli_matrix, Fs, spect_matrix, binned_repr_matrix
 end
 
+@doc """
+    generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen, I<:Integer}
+
+Generate `n_trials` of stimuli based on specifications in the stimgen type.
+
+Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`. 
+"""
 function generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen,I<:Integer}
     @assert n_trials > 1 "`n_trials` must be greater than 1. To generate one trial, use `generate_stimulus()`."
 
@@ -167,15 +180,15 @@ end
 
 #############################
 
-"""
+@doc """
     freq_bins(s::BS) where {BS<:BinnedStimgen}
 
 Generates a vector indicating which frequencies belong to the same bin,
     following a tonotopic map of audible frequency perception.
 """
 @memoize function freq_bins(s::BS) where {BS<:BinnedStimgen}
-    Fs = get_fs(s)
-    nfft = get_nfft(s)
+    Fs = fs(s)
+    nfft = nsamples(s)
 
     # Define Frequency Bin Indices 1 through self.n_bins
     bintops =
@@ -197,21 +210,21 @@ Generates a vector indicating which frequencies belong to the same bin,
     return binnum, Fs, nfft, frequency_vector
 end
 
-"""
+@doc """
     empty_spectrum(s::BS) where {BS<:BinnedStimgen}
 
 Generate an `nfft x 1` vector of Ints, where all values are -100. 
 """
-empty_spectrum(s::BS) where {BS<:BinnedStimgen} = -100 * ones(Int, get_nfft(s) ÷ 2)
+empty_spectrum(s::BS) where {BS<:BinnedStimgen} = -100 * ones(Int, fs(s) ÷ 2)
 
-"""
+@doc """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
 
 Convert a spectral representation into a binned representation.
  
 Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in each frequency bin,
     where `n_trials` = size(binned_repr, 2).
-"""
+@doc """
 function spect2binnedrepr(s::BS, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
     binned_repr = zeros(s.n_bins, size(spect, 2))
     B, = freq_bins(s)
@@ -226,7 +239,7 @@ function spect2binnedrepr(s::BS, spect::AbstractArray{T}) where {BS<:BinnedStimg
     return binned_repr
 end
 
-"""
+@doc """
     binnedrepr2spect(s::BinnedStimgen, binned_repr::AbstractArray{T}) where {BS<:BinnedStimgen,T}
 
 Convert the binned representation into a spectral representation.
@@ -251,7 +264,7 @@ end
 #############################
 
 # UniformPrior
-"""
+@doc """
     generate_stimulus(s::UniformPrior)
 
 Generate one stimulus sound.
