@@ -203,7 +203,7 @@ end
 
 Generate an `nfft x 1` vector of Ints, where all values are -100. 
 """
-empty_spectrum(s::BS) where {BS<:BinnedStimgen} = -100 * ones(Int, fs(s) ÷ 2)
+empty_spectrum(s::BS) where {BS<:BinnedStimgen} = -100 * ones(Int(nsamples(s) ÷ 2))
 
 @doc """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
