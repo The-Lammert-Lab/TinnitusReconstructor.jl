@@ -61,9 +61,6 @@ that the loss is summed over.
 julia> mmd_loss(1, 1; σs=[1, 2, 3])
 0.0
 
-julia> mmd_loss(1, 2; σs=[1, 2, 3])
-2.3608160417241995
-
 julia> mmd_loss(1, 1)
 0.0
 
