@@ -8,6 +8,7 @@ using the synthetic subject.
 
 push!(LOAD_PATH, "..")
 
+<<<<<<< HEAD
 using Optimisers
 using Zygote
 using TinnitusReconstructor
@@ -140,3 +141,7 @@ function main()
 end
 
 main()
+=======
+using Flux
+using TinnitusReconstructor
+>>>>>>> main
