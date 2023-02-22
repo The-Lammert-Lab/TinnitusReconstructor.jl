@@ -29,7 +29,7 @@ const η = 0.001f0 # [1e-6, 5e-3]
 # ADAM momementum
 const β = (0.9f0, 0.999f0) # [0.9, 1] (K&U used ADAM not ADAMW)
 # weight decay
-const decay = 0f0
+const decay = 0.0f0
 # Gaussian kernel standard deviation
 const σs = [2, 5, 10, 20, 40, 80]
 # Batch size
@@ -49,14 +49,34 @@ const p = 3
 
 # TODO: fix the regularization
 @doc """
-    mmd_loss(x, x̂)
+    mmd_loss(x, x̂; σs=[1])
 
-Compute the loss function,
-which is mean maximum discrepancy
-plus an L1 loss.
+Compute the mean maximum discrepancy loss
+with a Gaussian kernel.
+`σs` is a list of kernel sizes (standard deviations)
+that the loss is summed over.
+
+# Examples
+```jldoctest
+julia> mmd_loss(1, 1; σs=[1, 2, 3])
+0.0
+
+julia> mmd_loss(1, 2; σs=[1, 2, 3])
+2.3608160417241995
+
+julia> mmd_loss(1, 1)
+0.0
+
+julia> mmd_loss(1, 2)
+0.7869386805747332
+```
+
+# See Also
+
+* [TinnitusReconstructor.mmd](@ref TinnitusReconstructor.mmd)
 """
 function mmd_loss(x, x̂; σs=[1])
-    sum(TinnitusReconstructor.mmd(x, x̂, σ) for σ in σs)
+    return sum(TinnitusReconstructor.mmd(x, x̂, σ) for σ in σs)
 end
 
 """
@@ -101,7 +121,7 @@ end
 function main()
     # %% Create the training data
     H, U = generate_data(32, n_trials, n_bins, p)
-    dataloader = MLUtils.DataLoader((H, U), batchsize=B)
+    dataloader = MLUtils.DataLoader((H, U); batchsize=B)
 
     # Instantiate parameters
     W = rand(Float32, n_trials, n_bins)
@@ -117,10 +137,9 @@ function main()
 
         Optimisers.update(state, W, Δ[1])
         @show round(L, digits=3)
-
     end
 
-    save("weights.jld2", abs.(W))
+    return save("weights.jld2", abs.(W))
 end
 
 main()

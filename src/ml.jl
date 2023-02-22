@@ -7,15 +7,25 @@ using LinearAlgebra
 using Random: AbstractRNG
 
 """
-    mmd(x, y, σ=1)
+    mmd(x, y; σ=1)
 
 Compute the maximum mean discrepancy (MMD)
-between `x` and `y` using a Gaussian kernel.
+between `x` and `y` using a Gaussian kernel
+with standard deviation parameter `σ`.
 
 # Examples
-TODO
+```jldoctest
+julia> mmd(1, 1)
+0.0
+
+julia> mmd(1, 2; σ=1)
+0.7869386805747332
+
+julia> mmd(1, 2; σ=2)
+0.2350061948308091
+```
 """
-function mmd(x, y, σ=1)
+function mmd(x, y; σ=1)
     M = length(x)
     N = length(y)
 
@@ -23,19 +33,19 @@ function mmd(x, y, σ=1)
 
     running_total = 0
     for i in 1:M, j in 1:M
-        running_total += gaussian_kernel(x[i], x[j])
+        running_total += gaussian_kernel(x[i], x[j]; σ=σ)
     end
     mmd += (running_total / M^2)
 
     running_total = 0
     for i in 1:M, j in 1:N
-        running_total += gaussian_kernel(x[i], y[j])
+        running_total += gaussian_kernel(x[i], y[j]; σ=σ)
     end
     mmd -= (2 / (M * N) * running_total)
 
     running_total = 0
     for i in 1:N, j in 1:N
-        running_total += gaussian_kernel(y[i], y[j])
+        running_total += gaussian_kernel(y[i], y[j]; σ=σ)
     end
     mmd += (running_total / N^2)
 
