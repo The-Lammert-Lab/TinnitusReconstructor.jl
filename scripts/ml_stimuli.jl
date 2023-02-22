@@ -8,28 +8,34 @@ using the synthetic subject.
 
 push!(LOAD_PATH, "..")
 
-using Flux
+using Optimisers
+using Zygote
 using TinnitusReconstructor
 using LinearAlgebra
 using StatsBase: sample
+using MLUtils
+using ProgressMeter
+using FileIO
 
 # %% Constants
 
-const n_trials = 200
-const n_bins = 32
+const n_trials = 100
+const n_bins = 16
 
 # %% Hyperparameters
 
 # learning rate
-const η = 0.001 # [1e-6, 5e-3]
+const η = 0.001f0 # [1e-6, 5e-3]
 # ADAM momementum
-const β = (0.9, 0.999) # [0.9, 1] (K&U used ADAM not ADAMW)
+const β = (0.9f0, 0.999f0) # [0.9, 1] (K&U used ADAM not ADAMW)
 # weight decay
-const decay = 0
+const decay = 0f0
 # Gaussian kernel standard deviation
 const σs = [2, 5, 10, 20, 40, 80]
 # Batch size
-const B = 16 # [150, 1500]
+const B = 4 # [150, 1500]
+# L1 loss coefficient
+const λ = 0.001f0
 
 # %% Data parameters
 
@@ -37,25 +43,24 @@ const n_training = 50_000
 const n_val = 10_000
 
 # sparsity
-const p = 5
+const p = 3
 
 # %% Useful functions
 
+# TODO: fix the regularization
 @doc """
-    loss(x, x̂; λ=0)
+    mmd_loss(x, x̂)
 
 Compute the loss function,
 which is mean maximum discrepancy
 plus an L1 loss.
 """
-function loss(x, x̂; λ=0, σs=[1])
-    mmd_loss = sum(TinnitusReconstructor.mmd(x, x̂, σ) for σ in σs)
-    l1_loss = λ * norm(x̂, 1)
-    return mmd_loss + l1_loss
+function mmd_loss(x, x̂; σs=[1])
+    sum(TinnitusReconstructor.mmd(x, x̂, σ) for σ in σs)
 end
 
 """
-    generate_data(n_samples::T, n::T, p::T) where T <: Integer
+    generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
 
 Generate `n_samples` training samples of length `n`
 with sparsity `p`.
@@ -82,6 +87,40 @@ function generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
     return H, U
 end
 
-# %% Create the "neural network"
+@doc """
+    model(x, W)
 
-model = Dense(n_bins => n_trials, identity)
+Parameterize the optimization problem as a model
+with input `x` and weights `W`.
+"""
+function model(x, W)
+    W̄ = abs.(W)
+    return W̄ * x
+end
+
+function main()
+    # %% Create the training data
+    H, U = generate_data(32, n_trials, n_bins, p)
+    dataloader = MLUtils.DataLoader((H, U), batchsize=B)
+
+    # Instantiate parameters
+    W = rand(Float32, n_trials, n_bins)
+    state = Optimisers.setup(Optimisers.Adam(η, β), W)
+
+    ProgressMeter.@showprogress for (h, u) in dataloader
+        # Zygote.gradient(W -> loss(model(h, W), u), W)
+        L, Δ = Zygote.withgradient(W) do W
+            this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
+            this_l1_loss = λ * norm(W, 1)
+            this_mmd_loss + this_l1_loss
+        end
+
+        Optimisers.update(state, W, Δ[1])
+        @show round(L, digits=3)
+
+    end
+
+    save("weights.jld2", abs.(W))
+end
+
+main()
