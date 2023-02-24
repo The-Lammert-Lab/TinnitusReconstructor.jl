@@ -1421,8 +1421,8 @@ uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 version = "0.5.22"
 
 [[deps.TinnitusReconstructor]]
-deps = ["DSP", "Documenter", "FFTW", "FastBroadcast", "FileIO", "Flux", "LibSndFile", "LinearAlgebra", "LiveServer", "Memoize", "Plots", "PortAudio", "Random", "SampledSignals", "StaticArrays", "Statistics", "StatsBase", "Unitful"]
-git-tree-sha1 = "d99e0d9a04b19299689ea34a1d6c6b00cfccc8bb"
+deps = ["DSP", "Documenter", "FFTW", "FastBroadcast", "FileIO", "Flux", "Functors", "LibSndFile", "LinearAlgebra", "LiveServer", "Memoize", "Plots", "PortAudio", "Random", "SampledSignals", "StaticArrays", "Statistics", "StatsBase", "Unitful"]
+git-tree-sha1 = "0d0177c8806a20884e06c82a5b117e9599690b33"
 repo-rev = "63-ml-for-measurement-matrix"
 repo-url = ".."
 uuid = "998763c9-5807-4081-8b95-f32419d2af94"
