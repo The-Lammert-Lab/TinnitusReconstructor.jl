@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.3"
+julia_version = "1.8.5"
 manifest_format = "2.0"
 project_hash = "d7005ad7d08a9205b7e345e757fb5c754e19bb05"
 
@@ -240,7 +240,7 @@ version = "3.46.1"
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "0.5.2+0"
+version = "1.0.1+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
@@ -890,6 +890,12 @@ git-tree-sha1 = "42324d08725e200c23d4dfb549e0d5d89dede2d2"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 version = "0.5.10"
 
+[[deps.MakieCore]]
+deps = ["Observables"]
+git-tree-sha1 = "2c3fc86d52dfbada1a2e5e150e50f06c30ef149c"
+uuid = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
+version = "0.6.2"
+
 [[deps.ManualMemory]]
 git-tree-sha1 = "bcaef4fc7a0cfe2cba636d84cda54b5e4e4ca3cd"
 uuid = "d125e4d3-2237-4719-b19c-fa641b8a4667"
@@ -973,6 +979,11 @@ version = "6.2.0+0"
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
+
+[[deps.Observables]]
+git-tree-sha1 = "6862738f9796b3edc1c09d0890afce4eca9e7e93"
+uuid = "510215fc-4207-5dde-b226-833fc4488ee2"
+version = "0.5.4"
 
 [[deps.OffsetArrays]]
 deps = ["Adapt"]
@@ -1095,10 +1106,10 @@ uuid = "1d0040c9-8b98-4ee7-8388-3f51789ca0ad"
 version = "0.2.1"
 
 [[deps.Polynomials]]
-deps = ["LinearAlgebra", "RecipesBase"]
-git-tree-sha1 = "a14a99e430e42a105c898fcc7f212334bc7be887"
+deps = ["LinearAlgebra", "MakieCore", "RecipesBase"]
+git-tree-sha1 = "a10bf14e9dc2d0897da7ba8119acc7efdb91ca80"
 uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
-version = "3.2.4"
+version = "3.2.5"
 
 [[deps.PortAudio]]
 deps = ["LinearAlgebra", "SampledSignals", "Suppressor", "alsa_plugins_jll", "libportaudio_jll"]
@@ -1410,9 +1421,9 @@ uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 version = "0.5.22"
 
 [[deps.TinnitusReconstructor]]
-deps = ["DSP", "Documenter", "FFTW", "FastBroadcast", "FileIO", "Flux", "Functors", "LibSndFile", "LinearAlgebra", "LiveServer", "Memoize", "Plots", "PortAudio", "Random", "SampledSignals", "StaticArrays", "Statistics", "StatsBase", "Unitful"]
-git-tree-sha1 = "c03cefe0a3ba01d9487caec443f1c890c0bdd2d3"
-repo-rev = "39-implement-koller-utschick-paper"
+deps = ["DSP", "Documenter", "FFTW", "FastBroadcast", "FileIO", "Flux", "LibSndFile", "LinearAlgebra", "LiveServer", "Memoize", "Plots", "PortAudio", "Random", "SampledSignals", "StaticArrays", "Statistics", "StatsBase", "Unitful"]
+git-tree-sha1 = "d99e0d9a04b19299689ea34a1d6c6b00cfccc8bb"
+repo-rev = "63-ml-for-measurement-matrix"
 repo-url = ".."
 uuid = "998763c9-5807-4081-8b95-f32419d2af94"
 version = "0.1.0"
