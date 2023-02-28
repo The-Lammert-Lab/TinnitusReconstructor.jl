@@ -222,11 +222,11 @@ Convert a spectral representation into a binned representation.
 Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in each frequency bin,
     where `n_trials` = size(binned_repr, 2).
 @doc """
-function spect2binnedrepr(s::BS, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
+function spect2binnedrepr(s::BS, spect::AbstractVecOrMat{T}) where {BS<:BinnedStimgen,T}
     binned_repr = zeros(s.n_bins, size(spect, 2))
     B, = freq_bins(s)
 
-    @assert length(spect) == length(B)
+    @assert size(spect, 1) == length(B)
 
     for bin_num in 1:(s.n_bins)
         a = spect[B .== bin_num, :]

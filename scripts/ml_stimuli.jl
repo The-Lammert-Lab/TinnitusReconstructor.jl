@@ -16,6 +16,7 @@ using StatsBase: sample
 using MLUtils
 using ProgressMeter
 using FileIO
+using Statistics
 
 # %% Constants
 
@@ -45,6 +46,12 @@ const n_val = 10_000
 # sparsity
 const p = 3
 
+# %% Paths
+const tinnitus_sound_paths = (
+    "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav",
+    "../ATA/ATA_Tinnitus_Roaring_Tone_1sec.wav"
+)
+
 # %% Useful functions
 
 # TODO: fix the regularization
@@ -70,10 +77,10 @@ julia> mmd_loss(1, 2)
 
 # See Also
 
-* [TinnitusReconstructor.mmd](@ref TinnitusReconstructor.mmd)
+* [mmd](@ref mmd)
 """
 function mmd_loss(x, x̂; σs=[1])
-    return sum(TinnitusReconstructor.mmd(x, x̂, σ) for σ in σs)
+    return sum(mmd(x, x̂, σ) for σ in σs)
 end
 
 """
@@ -115,11 +122,26 @@ function model(x, W)
     return W̄ * x
 end
 
-function test(W)
+function load_test_data(n_bins, tinnitus_sound_paths)
+    stimgen = UniformPrior(; n_bins=n_bins, min_freq=100, max_freq=13e3)
+    target_signals = hcat([audio_path |> wav2spect .|> dB for audio_path in tinnitus_sound_paths]...)
+    binned_target_signals = spect2binnedrepr(stimgen, target_signals)
+    return stimgen, target_signals, binned_target_signals
+end
+
+function test(W::AbstractMatrix{T}, s::SG, target_signals::AbstractMatrix{T2}, binned_target_signals::LinearAlgebra.AbstractMatrix{T2}, p::Int) where {SG <: TinnitusReconstructor.Stimgen, T <: Real, T2 <: Real}
     # Map the stimuli from bin-space to frequency-space
-    s = TinnitusReconstructor.UniformPrior(; n_bins=n_bins, min_freq=100, max_freq=13e3)
-    stimuli_matrix = TinnitusReconstructor.binnedrepr2spect(s, W')
-    
+
+    nts = size(target_signals, 2)
+    stimuli_matrix = binnedrepr2spect(s, W')
+    # Perform the experiment with the synthetic subject
+    r = 0.
+    for i in 1:nts
+        y, _, _ = subject_selection_process(stimuli_matrix, target_signals[:, i])
+        x = cs(y, W, p)
+        r += cor(x, binned_target_signals[:, i])
+    end
+    return r / nts
 end
 
 function main()
