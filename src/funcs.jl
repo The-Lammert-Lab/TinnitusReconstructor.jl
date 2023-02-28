@@ -4,6 +4,61 @@ hz2mels(f) = 2595 * log10(1 + (f / 700))
 
 mels2hz(m) = 700 * (10^(m / 2595) - 1)
 
+@doc raw"""
+    dB(x)
+
+Convert from amplitude-scale to decibel-scale via
+
+``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
+
+# Examples
+```jldoctest
+
+julia> TinnitusReconstructor.dB.([1, 2, 100])
+3-element Vector{Float64}:
+  0.0
+  3.010299956639812
+ 20.0
+````
+
+"""
+dB(x) = 10log10(x)
+
+@doc raw"""
+    invdB(x)
+
+Convert from decibel-scale to amplitude-scale via
+
+``\mathrm{invdB}(x) = 10^{x/10}``
+
+# See also
+* [`dB`](@ref)
+* [`db⁻¹`](@ref)
+"""
+invdB(x) = 10^(x/10)
+
+@doc raw"""
+    db⁻¹(x)
+
+Synonym for [`invdB`](@ref).
+
+# Examples
+```jldoctest
+julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
+5-element Vector{Float64}:
+ 1.0e-10
+ 1.0
+ 1.2589254117941673
+ 1.5848931924611136
+ 1.0e10
+```
+
+# See also
+* [`dB`](@ref)
+* [`db⁻¹`](@ref)
+"""
+db⁻¹(x) = @inline invdB(x)
+
 """
     play_scaled_audio(x, Fs) 
 
@@ -165,7 +220,6 @@ function subject_selection_process(
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
     return y, stimuli_matrix, nothing
 end
-
 
 @doc """
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}

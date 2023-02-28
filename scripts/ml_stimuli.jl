@@ -116,6 +116,10 @@ function model(x, W)
 end
 
 function test(W)
+    # Map the stimuli from bin-space to frequency-space
+    s = TinnitusReconstructor.UniformPrior(; n_bins=n_bins, min_freq=100, max_freq=13e3)
+    stimuli_matrix = TinnitusReconstructor.binnedrepr2spect(s, W')
+    
 end
 
 function main()
