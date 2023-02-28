@@ -31,17 +31,6 @@ Convert from decibel-scale to amplitude-scale via
 
 ``\mathrm{invdB}(x) = 10^{x/10}``
 
-# See also
-* [`dB`](@ref)
-* [`db⁻¹`](@ref)
-"""
-invdB(x) = 10^(x/10)
-
-@doc raw"""
-    db⁻¹(x)
-
-Synonym for [`invdB`](@ref).
-
 # Examples
 ```jldoctest
 julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
@@ -52,6 +41,17 @@ julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
  1.5848931924611136
  1.0e10
 ```
+
+# See also
+* [`dB`](@ref)
+* [`db⁻¹`](@ref)
+"""
+invdB(x) = 10^(x/10)
+
+@doc raw"""
+    db⁻¹(x)
+
+Synonym for [`invdB`](@ref).
 
 # See also
 * [`dB`](@ref)
