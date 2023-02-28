@@ -133,42 +133,46 @@ end
 
 cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 
+# """
+#     subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
+#     subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
+#     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
+#     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
+
+# Idealized model of a subject performing the task.
+
+# Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
+# If `target_signal` is a matrix, it must be one dimensional because that method simply applies `vec(target_signal)`.
+# Return an `n_trials x 1` or `size(stimuli, 1) x 1` vector of `-1` for "no" and `1` for "yes".
+# """
+# function subject_selection_process end
+
+@doc """
+    subject_selection_process(stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}) where {T<:Real}
+
+Perform the synthetic subject decision process, given a matrix of precomputed stimuli `stimuli_matrix`
+and a `target_signal`.
+The `stimuli_matrix` is of size `m x n` where `m` is the number of trials and `n` is the number of samples in the signal.
+The `target_signal` is a flat vector of size `n` or an `n x 1` matrix.
+Return the `n`-dimensional response vector `y` as well as the `stimuli_matrix`
+as well as `nothing` for the binned representation.
 """
-    subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
-    subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
-    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
-    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
-
-Idealized model of a subject performing the task.
-
-Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
-If `target_signal` is a matrix, it must be one dimensional because that method simply applies `vec(target_signal)`.
-Return an `n_trials x 1` or `size(stimuli, 1) x 1` vector of `-1` for "no" and `1` for "yes".
-"""
-function subject_selection_process end
-
 function subject_selection_process(
-    stimuli::AbstractArray{T}, target_signal::AbstractVector{T}
+    stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}
 ) where {T<:Real}
-    @assert(
-        !isempty(stimuli),
-        "Stimuli must be explicitly passed or generated via
-`subject_selection_process(s::SG, target_signal::AbstractVector{T}) where {SG<:Stimgen, T<:Real}`"
-    )
-
-    # Ideal selection
-    e = stimuli * target_signal
+    e = stimuli_matrix'target_signal
     y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
-
-    return y, stimuli
+    return y, stimuli_matrix, nothing
 end
 
-# Convert target_signal to a Vector if passed as an Array.
+
+@doc """
+    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
+"""
 function subject_selection_process(
     stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}
 ) where {T<:Real}
-    @assert size(target_signal, 2) == 1 "Target signal must be a Vector or single-column Matrix."
     return subject_selection_process(stimuli, vec(target_signal))
 end
 

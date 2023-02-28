@@ -115,6 +115,9 @@ function model(x, W)
     return W̄ * x
 end
 
+function test(W)
+end
+
 function main()
     # %% Create the training data
     H, U = generate_data(32, n_trials, n_bins, p)

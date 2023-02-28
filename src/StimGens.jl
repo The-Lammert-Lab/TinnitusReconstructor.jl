@@ -89,6 +89,13 @@ ERROR: InexactError: Int64(30869.999999999996)
 nsamples(s::SG) where {SG<:Stimgen} = convert(Int, fs(s) * s.duration)
 
 # Universal functions
+@doc """
+    subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen,T<:Real,I<:Integer}
+
+Perform the synthetic subject decision process,
+generating the stimuli on-the-fly using the stimulus
+generation method `s`.
+"""
 function subject_selection_process(
     s::SG, target_signal::AbstractVector{T}, n_trials::I
 ) where {SG<:Stimgen,T<:Real,I<:Integer}
@@ -100,10 +107,12 @@ function subject_selection_process(
 end
 
 # Convert target_signal to Vector if passed as an Array.
+@doc """
+    subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen,T<:Real,I<:Integer}
+"""
 function subject_selection_process(
     s::SG, target_signal::AbstractMatrix{T}, n_trials::I
 ) where {SG<:Stimgen,T<:Real,I<:Integer}
-    @assert size(target_signal, 2) == 1 "Target signal must be a Vector or single-column Matrix."
     return subject_selection_process(s, vec(target_signal), n_trials)
 end
 
