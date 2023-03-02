@@ -6,7 +6,7 @@ for a simulated tinnitus reconstruction experiment
 using the synthetic subject.
 """
 
-push!(LOAD_PATH, "..")
+# push!(LOAD_PATH, "..")
 
 using Optimisers
 using Zygote
@@ -55,6 +55,50 @@ const tinnitus_sound_paths = (
 )
 
 # %% Useful functions
+
+@doc raw"""
+    dB(x)
+
+Convert from amplitude-scale to decibel-scale via
+
+``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
+
+# Examples
+```jldoctest
+
+julia> TinnitusReconstructor.dB.([1, 2, 100])
+3-element Vector{Float64}:
+  0.0
+  3.010299956639812
+ 20.0
+````
+
+"""
+dB(x) = 10log10(x)
+
+@doc raw"""
+    invdB(x)
+
+Convert from decibel-scale to amplitude-scale via
+
+``\mathrm{invdB}(x) = 10^{x/10}``
+
+# Examples
+```jldoctest
+julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
+5-element Vector{Float64}:
+ 1.0e-10
+ 1.0
+ 1.2589254117941673
+ 1.5848931924611136
+ 1.0e10
+```
+
+# See also
+* [`dB`](@ref)
+* [`db⁻¹`](@ref)
+"""
+invdB(x) = 10^(x / 10)
 
 # TODO: fix the regularization
 @doc """
@@ -124,10 +168,11 @@ function model(x, W)
 end
 
 function load_test_data(n_bins, tinnitus_sound_paths)
-    stimgen = UniformPrior(; n_bins=n_bins, min_freq=100, max_freq=13e3)
+    stimgen = UniformPrior(; n_bins=n_bins, min_freq=100., max_freq=13e3, min_bins=1, max_bins=1)
     target_signals = hcat(
         [dB.(wav2spect(audio_path)) for audio_path in tinnitus_sound_paths]...
     )
+
     binned_target_signals = spect2binnedrepr(stimgen, target_signals)
     return stimgen, target_signals, binned_target_signals
 end
@@ -136,7 +181,7 @@ function test(
     W::AbstractMatrix{T},
     s::SG,
     target_signals::AbstractMatrix{T2},
-    binned_target_signals::LinearAlgebra.AbstractMatrix{T2},
+    binned_target_signals::AbstractMatrix{T2},
     p::Int,
 ) where {SG<:TinnitusReconstructor.Stimgen,T<:Real,T2<:Real}
     # Map the stimuli from bin-space to frequency-space
@@ -153,6 +198,11 @@ function test(
     return r / nts
 end
 
+function test(w::AbstractMatrix, s::SG, target_signals::AbstractMatrix, binned_target_signals::AbstractMatrix, p::Int) where SG <: TinnitusReconstructor.Stimgen
+    W, target_signals, binned_target_signals = promote(W, target_signals, binned_target_signals)
+    test(W, s, target_signals, binned_target_signals, p)
+end
+
 function create_es_cb(n_bins, tinnitus_sound_paths, p)
     stimgen, target_signals, binned_target_signals = load_test_data(
         n_bins, tinnitus_sound_paths
@@ -162,7 +212,7 @@ function create_es_cb(n_bins, tinnitus_sound_paths, p)
     end
 
     # Create early stopping callback
-    es = Flux.early_stopping(acc, 10; distance=(best_score, score) -> score - best_score)
+    es = early_stopping(acc, 10; distance=(best_score, score) -> score - best_score)
     return es
 end
 
@@ -222,6 +272,7 @@ function main()
         end
 
         Optimisers.update(opt_state, W, Δ[1])
+        @info L
 
         # Callbacks
         eval_cb(
