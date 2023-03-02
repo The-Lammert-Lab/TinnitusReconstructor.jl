@@ -17,6 +17,9 @@ using MLUtils
 using ProgressMeter
 using FileIO
 using Statistics
+using Flux: early_stopping, throttle
+using BSON: @save
+using Dates
 
 # %% Constants
 
@@ -48,8 +51,7 @@ const p = 3
 
 # %% Paths
 const tinnitus_sound_paths = (
-    "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav",
-    "../ATA/ATA_Tinnitus_Roaring_Tone_1sec.wav"
+    "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav", "../ATA/ATA_Tinnitus_Roaring_Tone_1sec.wav"
 )
 
 # %% Useful functions
@@ -118,24 +120,31 @@ Parameterize the optimization problem as a model
 with input `x` and weights `W`.
 """
 function model(x, W)
-    W̄ = abs.(W)
-    return W̄ * x
+    return W * x
 end
 
 function load_test_data(n_bins, tinnitus_sound_paths)
     stimgen = UniformPrior(; n_bins=n_bins, min_freq=100, max_freq=13e3)
-    target_signals = hcat([audio_path |> wav2spect .|> dB for audio_path in tinnitus_sound_paths]...)
+    target_signals = hcat(
+        [dB.(wav2spect(audio_path)) for audio_path in tinnitus_sound_paths]...
+    )
     binned_target_signals = spect2binnedrepr(stimgen, target_signals)
     return stimgen, target_signals, binned_target_signals
 end
 
-function test(W::AbstractMatrix{T}, s::SG, target_signals::AbstractMatrix{T2}, binned_target_signals::LinearAlgebra.AbstractMatrix{T2}, p::Int) where {SG <: TinnitusReconstructor.Stimgen, T <: Real, T2 <: Real}
+function test(
+    W::AbstractMatrix{T},
+    s::SG,
+    target_signals::AbstractMatrix{T2},
+    binned_target_signals::LinearAlgebra.AbstractMatrix{T2},
+    p::Int,
+) where {SG<:TinnitusReconstructor.Stimgen,T<:Real,T2<:Real}
     # Map the stimuli from bin-space to frequency-space
 
     nts = size(target_signals, 2)
     stimuli_matrix = binnedrepr2spect(s, W')
     # Perform the experiment with the synthetic subject
-    r = 0.
+    r = 0.0
     for i in 1:nts
         y, _, _ = subject_selection_process(stimuli_matrix, target_signals[:, i])
         x = cs(y, W, p)
@@ -144,28 +153,99 @@ function test(W::AbstractMatrix{T}, s::SG, target_signals::AbstractMatrix{T2}, b
     return r / nts
 end
 
+function create_es_cb(n_bins, tinnitus_sound_paths, p)
+    stimgen, target_signals, binned_target_signals = load_test_data(
+        n_bins, tinnitus_sound_paths
+    )
+    acc = let v = 0
+        (W) -> v = test(W, stimgen, target_signals, binned_target_signals, p)
+    end
+
+    # Create early stopping callback
+    es = Flux.early_stopping(acc, 10; distance=(best_score, score) -> score - best_score)
+    return es
+end
+
+"""
+    evalcb(model, opt_state, loss, acc, λ) -> str
+
+Create a model name and save the model, loss, accuracy, and hyperparameters.
+"""
+function _evalcb(model, opt_state, loss, acc, λ)
+    loss = round(loss; digits=3)
+    acc = round(acc; digits=3)
+    @info loss
+    @info acc
+    model_name = "model-date=$(now())-loss=$(loss)-acc=$(acc)-lambda=$(λ).bson"
+    @save model_name model opt_state loss acc λ
+    @info "model saved to $model_name"
+    return model_name
+end
+
+"""
+    create_eval_cb(timeout=1800)
+
+Create a throttled callback that saves the model, loss, accuracy, and hyperparameters
+"""
+function create_eval_cb(timeout=1800)
+    return throttle(
+        timeout
+    ) do W, stimgen, target_signals, binned_target_signals, p, model, opt_state, loss, λ
+        acc = test(W, stimgen, target_signals, binned_target_signals, p)
+        _evalcb(model, opt_state, loss, acc, λ)
+    end
+end
+
 function main()
     # %% Create the training data
     H, U = generate_data(32, n_trials, n_bins, p)
     dataloader = MLUtils.DataLoader((H, U); batchsize=B)
 
+    # Create test data
+    stimgen, target_signals, binned_target_signals = load_test_data(n_bins, tinnitus_sound_paths)
+
     # Instantiate parameters
     W = rand(Float32, n_trials, n_bins)
-    state = Optimisers.setup(Optimisers.Adam(η, β), W)
+    opt_state = Optimisers.setup(Optimisers.Adam(η, β), W)
+
+    # Callbacks
+    es = create_es_cb(n_bins, tinnitus_sound_paths, p)
+    eval_cb = create_eval_cb()
+
+    # Main loop
 
     ProgressMeter.@showprogress for (h, u) in dataloader
         # Zygote.gradient(W -> loss(model(h, W), u), W)
         L, Δ = Zygote.withgradient(W) do W
             this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
-            this_l1_loss = λ * norm(W, 1)
-            this_mmd_loss + this_l1_loss
+            this_l1_loss = λ * norm(invdB.(W), 1)
         end
 
-        Optimisers.update(state, W, Δ[1])
-        @show round(L, digits=3)
-    end
+        Optimisers.update(opt_state, W, Δ[1])
 
-    return save("weights.jld2", abs.(W))
+        # Callbacks
+        eval_cb(
+            W,
+            stimgen,
+            target_signals,
+            binned_target_signals,
+            p,
+            model,
+            opt_state,
+            L,
+            λ,
+        )
+        if es()
+            # Final steps
+            acc = test(W, stimgen, target_signals, binned_target_signals, p)
+            _evalcb(model, opt_state, L, acc, λ)
+        end
+
+    end
+    
+    @info "DONE!"
+
+    # return save("weights.jld2", abs.(W))
 end
 
 main()
