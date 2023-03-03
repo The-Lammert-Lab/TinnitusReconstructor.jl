@@ -17,7 +17,7 @@ using MLUtils
 using ProgressMeter
 using FileIO
 using Statistics
-using Flux: early_stopping, throttle
+using Flux: throttle
 using BSON: @save
 using Dates
 using Random
@@ -206,20 +206,6 @@ function test(W::AbstractMatrix, s::SG, target_signals::AbstractMatrix, binned_t
     test(W, s, target_signals, binned_target_signals, p)
 end
 
-# TODO: fix this
-function create_es_cb(n_bins, tinnitus_sound_paths, p)
-    stimgen, target_signals, binned_target_signals = load_test_data(
-        n_bins, tinnitus_sound_paths
-    )
-    acc = let v = 0
-        (W) -> v = test(W, stimgen, target_signals, binned_target_signals, p)
-    end
-
-    # Create early stopping callback
-    es = early_stopping(acc, 10; distance=(best_score, score) -> score - best_score)
-    return es
-end
-
 """
     evalcb(model, opt_state, loss, acc, λ) -> str
 
@@ -233,7 +219,7 @@ function _evalcb(model, opt_state, loss, acc, λ)
     model_name = "model-date=$(now())-loss=$(loss)-acc=$(acc)-lambda=$(λ).bson"
     @save model_name model opt_state loss acc λ
     @info "model saved to $model_name"
-    return model_name
+    return model_name, acc
 end
 
 """
@@ -263,11 +249,11 @@ function train_loop(λ)
     opt_state = Optimisers.setup(Optimisers.Adam(η, β), W)
 
     # Callbacks
-    # es = create_es_cb(n_bins, tinnitus_sound_paths, p)
-    es = early_stopping(test, 10)
     eval_cb = create_eval_cb()
 
     # Main loop
+    patience_counter = 0
+    best_acc = 0
 
     ProgressMeter.@showprogress for (h, u) in dataloader
         # Zygote.gradient(W -> loss(model(h, W), u), W)
@@ -282,7 +268,7 @@ function train_loop(λ)
         @info "loss = $(round(L; digits=3))"
 
         # Callbacks
-        eval_cb(
+        _, acc = eval_cb(
             W,
             stimgen,
             target_signals,
@@ -293,11 +279,17 @@ function train_loop(λ)
             L,
             λ,
         )
-        if es()
-            # Final steps
+        
+        # early stopping
+        if acc > best_acc
+            best_acc = acc
+            patience_counter = 0
+        else
+            patience_counter += 1
+        end
+        if patience_counter > 10
+            _evalcb(W, opt_state, L, acc, λ)
             @info "early stopping triggered"
-            acc = test(W, stimgen, target_signals, binned_target_signals, p)
-            _evalcb(model, opt_state, L, acc, λ)
             break
         end
 
