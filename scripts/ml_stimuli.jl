@@ -46,7 +46,7 @@ const λ = 0.001f0
 
 # %% Data parameters
 
-const n_training = 50_000
+const n_training = 5_000
 const n_val = 10_000
 
 # sparsity
