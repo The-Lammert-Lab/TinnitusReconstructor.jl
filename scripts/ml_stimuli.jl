@@ -20,6 +20,9 @@ using Statistics
 using Flux: early_stopping, throttle
 using BSON: @save
 using Dates
+using Random
+
+const rng = MersenneTwister(1234)
 
 # %% Constants
 
@@ -140,7 +143,7 @@ Note that these samples are sparse in the standard basis (identity matrix).
 """
 function generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
     # Generate a Gaussian random matrix
-    H = randn(Float32, n, n_samples) ./ p
+    H = randn(rng, Float32, n, n_samples) ./ p
     # Set all but p indices in each row to zero
     for h in eachcol(H)
         indices = sample(1:n, n - p; replace=false)
@@ -150,7 +153,7 @@ function generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
     H /= sqrt(norm(H) / n_samples)
 
     # Compute the label data
-    U = randn(Float32, m, n_samples)
+    U = randn(rng, Float32, m, n_samples)
     for u in eachcol(U)
         u .= u / norm(u)
     end
@@ -198,11 +201,12 @@ function test(
     return r / nts
 end
 
-function test(w::AbstractMatrix, s::SG, target_signals::AbstractMatrix, binned_target_signals::AbstractMatrix, p::Int) where SG <: TinnitusReconstructor.Stimgen
+function test(W::AbstractMatrix, s::SG, target_signals::AbstractMatrix, binned_target_signals::AbstractMatrix, p::Int) where SG <: TinnitusReconstructor.Stimgen
     W, target_signals, binned_target_signals = promote(W, target_signals, binned_target_signals)
     test(W, s, target_signals, binned_target_signals, p)
 end
 
+# TODO: fix this
 function create_es_cb(n_bins, tinnitus_sound_paths, p)
     stimgen, target_signals, binned_target_signals = load_test_data(
         n_bins, tinnitus_sound_paths
@@ -224,8 +228,8 @@ Create a model name and save the model, loss, accuracy, and hyperparameters.
 function _evalcb(model, opt_state, loss, acc, λ)
     loss = round(loss; digits=3)
     acc = round(acc; digits=3)
-    @info loss
-    @info acc
+    @info "loss = $loss"
+    @info "acc = $acc"
     model_name = "model-date=$(now())-loss=$(loss)-acc=$(acc)-lambda=$(λ).bson"
     @save model_name model opt_state loss acc λ
     @info "model saved to $model_name"
@@ -246,33 +250,36 @@ function create_eval_cb(timeout=1800)
     end
 end
 
-function main()
+function train_loop(λ)
     # %% Create the training data
-    H, U = generate_data(32, n_trials, n_bins, p)
+    H, U = generate_data(n_training, n_trials, n_bins, p)
     dataloader = MLUtils.DataLoader((H, U); batchsize=B)
 
     # Create test data
     stimgen, target_signals, binned_target_signals = load_test_data(n_bins, tinnitus_sound_paths)
 
     # Instantiate parameters
-    W = rand(Float32, n_trials, n_bins)
+    W = randn(rng, Float32, n_trials, n_bins)
     opt_state = Optimisers.setup(Optimisers.Adam(η, β), W)
 
     # Callbacks
-    es = create_es_cb(n_bins, tinnitus_sound_paths, p)
+    # es = create_es_cb(n_bins, tinnitus_sound_paths, p)
+    es = early_stopping(test, 10)
     eval_cb = create_eval_cb()
 
     # Main loop
 
     ProgressMeter.@showprogress for (h, u) in dataloader
         # Zygote.gradient(W -> loss(model(h, W), u), W)
+        println()
         L, Δ = Zygote.withgradient(W) do W
             this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
             this_l1_loss = λ * norm(invdB.(W), 1)
+            this_mmd_loss + this_l1_loss
         end
 
         Optimisers.update(opt_state, W, Δ[1])
-        @info L
+        @info "loss = $(round(L; digits=3))"
 
         # Callbacks
         eval_cb(
@@ -288,8 +295,10 @@ function main()
         )
         if es()
             # Final steps
+            @info "early stopping triggered"
             acc = test(W, stimgen, target_signals, binned_target_signals, p)
             _evalcb(model, opt_state, L, acc, λ)
+            break
         end
 
     end
@@ -297,6 +306,12 @@ function main()
     @info "DONE!"
 
     # return save("weights.jld2", abs.(W))
+end
+
+function main()
+    for λ in Float32.([0.01, 0.05, 0.01, 0.005, 0.001])
+        train_loop(λ)
+    end
 end
 
 main()
