@@ -32,7 +32,7 @@ const n_bins = 16
 # %% Hyperparameters
 
 # learning rate
-const η = 0.001f0 # [1e-6, 5e-3]
+const η = 0.00001f0 # [1e-6, 5e-3]
 # ADAM momementum
 const β = (0.9f0, 0.999f0) # [0.9, 1] (K&U used ADAM not ADAMW)
 # weight decay
@@ -40,7 +40,7 @@ const decay = 0.0f0
 # Gaussian kernel standard deviation
 const σs = [2, 5, 10, 20, 40, 80]
 # Batch size
-const B = 4 # [150, 1500]
+const B = 8 # [150, 1500]
 # L1 loss coefficient
 const λ = 0.001f0
 
@@ -211,12 +211,13 @@ end
 
 Create a model name and save the model, loss, accuracy, and hyperparameters.
 """
-function _evalcb(model, opt_state, loss, acc, λ)
+function _evalcb(model, opt_state, loss, acc, λ, η)
     loss = round(loss; digits=3)
     acc = round(acc; digits=3)
     @info "loss = $loss"
     @info "acc = $acc"
-    model_name = "model-date=$(now())-loss=$(loss)-acc=$(acc)-lambda=$(λ).bson"
+    @info "lr = $η"
+    model_name = "model-date=$(now())-loss=$(loss)-acc=$(acc)-lambda=$(λ)-lr=$(η).bson"
     @save model_name model opt_state loss acc λ
     @info "model saved to $model_name"
     return model_name, acc
@@ -230,16 +231,16 @@ Create a throttled callback that saves the model, loss, accuracy, and hyperparam
 function create_eval_cb(timeout=1800)
     return throttle(
         timeout
-    ) do W, stimgen, target_signals, binned_target_signals, p, model, opt_state, loss, λ
+    ) do W, stimgen, target_signals, binned_target_signals, p, model, opt_state, loss, λ, η
         acc = test(W, stimgen, target_signals, binned_target_signals, p)
-        _evalcb(model, opt_state, loss, acc, λ)
+        _evalcb(model, opt_state, loss, acc, λ, η)
     end
 end
 
-function train_loop(λ)
+function train_loop(η, λ)
     # %% Create the training data
     H, U = generate_data(n_training, n_trials, n_bins, p)
-    dataloader = MLUtils.DataLoader((H, U); batchsize=B)
+    dataloader = MLUtils.DataLoader((H, U); batchsize=B, parallel=true)
 
     # Create test data
     stimgen, target_signals, binned_target_signals = load_test_data(n_bins, tinnitus_sound_paths)
@@ -253,11 +254,10 @@ function train_loop(λ)
 
     # Main loop
     patience_counter = 0
-    best_acc = 0
+    best_loss = Inf
 
-    ProgressMeter.@showprogress for (h, u) in dataloader
+    for (i, (h, u)) in enumerate(dataloader)
         # Zygote.gradient(W -> loss(model(h, W), u), W)
-        println()
         L, Δ = Zygote.withgradient(W) do W
             this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
             this_l1_loss = λ * norm(invdB.(W), 1)
@@ -265,6 +265,7 @@ function train_loop(λ)
         end
 
         Optimisers.update(opt_state, W, Δ[1])
+        @info "$i of $(length(dataloader))"
         @info "loss = $(round(L; digits=3))"
 
         # Callbacks
@@ -278,16 +279,17 @@ function train_loop(λ)
             opt_state,
             L,
             λ,
+            η
         )
         
         # early stopping
-        if acc > best_acc
-            best_acc = acc
+        if L < best_loss
+            best_loss = L
             patience_counter = 0
         else
             patience_counter += 1
         end
-        if patience_counter > 10
+        if patience_counter > 100
             _evalcb(W, opt_state, L, acc, λ)
             @info "early stopping triggered"
             break
@@ -301,9 +303,10 @@ function train_loop(λ)
 end
 
 function main()
-    for λ in Float32.([0.01, 0.05, 0.01, 0.005, 0.001])
-        train_loop(λ)
+    # for λ in Float32.([0.1, 0.05, 0.01, 0.005, 0.001])
+    @showprogress for η in Float32.(10 .^ [-1, -2, -3, -4, -5])
+        train_loop(η, 0f0)
     end
 end
 
-main()
+# main()
