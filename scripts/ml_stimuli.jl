@@ -290,7 +290,7 @@ function train_loop(η, λ)
             patience_counter += 1
         end
         if patience_counter > 100
-            _evalcb(W, opt_state, L, acc, λ)
+            _evalcb(W, opt_state, L, acc, λ, η)
             @info "early stopping triggered"
             break
         end
@@ -304,9 +304,9 @@ end
 
 function main()
     # for λ in Float32.([0.1, 0.05, 0.01, 0.005, 0.001])
-    @showprogress for η in Float32.(10 .^ [-1, -2, -3, -4, -5])
+    @showprogress for η in Float32.(10. .^ [-1, -2, -3, -4, -5])
         train_loop(η, 0f0)
     end
 end
 
-# main()
+main()
