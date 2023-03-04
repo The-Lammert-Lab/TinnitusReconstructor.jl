@@ -21,6 +21,7 @@ using Flux: throttle
 using BSON: @save
 using Dates
 using Random
+using Base.Iterators: product
 
 const rng = MersenneTwister(1234)
 
@@ -239,7 +240,7 @@ end
 
 function train_loop(η, λ)
     # %% Create the training data
-    H, U = generate_data(n_training, n_trials, n_bins, p)
+    H, U = generate_data(10000, n_trials, n_bins, p)
     dataloader = MLUtils.DataLoader((H, U); batchsize=B, parallel=true)
 
     # Create test data
@@ -264,7 +265,7 @@ function train_loop(η, λ)
             this_mmd_loss + this_l1_loss
         end
 
-        Optimisers.update(opt_state, W, Δ[1])
+        opt_state, W = Optimisers.update(opt_state, W, Δ[1])
         @info "$i of $(length(dataloader))"
         @info "loss = $(round(L; digits=3))"
 
@@ -282,18 +283,18 @@ function train_loop(η, λ)
             η
         )
         
-        # early stopping
-        if L < best_loss
-            best_loss = L
-            patience_counter = 0
-        else
-            patience_counter += 1
-        end
-        if patience_counter > 100
-            _evalcb(W, opt_state, L, acc, λ, η)
-            @info "early stopping triggered"
-            break
-        end
+        # # early stopping
+        # if L < best_loss
+        #     best_loss = L
+        #     patience_counter = 0
+        # else
+        #     patience_counter += 1
+        # end
+        # if patience_counter > 100
+        #     _evalcb(W, opt_state, L, acc, λ, η)
+        #     @info "early stopping triggered"
+        #     break
+        # end
 
     end
     
@@ -303,9 +304,10 @@ function train_loop(η, λ)
 end
 
 function main()
-    # for λ in Float32.([0.1, 0.05, 0.01, 0.005, 0.001])
-    @showprogress for η in Float32.(10. .^ [-1, -2, -3, -4, -5])
-        train_loop(η, 0f0)
+    ηs = Float32.(10. .^ [-1, -2, -3, -4])
+    λs = Float32.(10. .^ [0, -1, -2, -3])
+    @showprogress for (η, λ) in product(ηs, λs)
+        train_loop(η, λ)
     end
 end
 
