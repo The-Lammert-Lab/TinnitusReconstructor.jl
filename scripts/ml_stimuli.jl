@@ -240,7 +240,7 @@ end
 
 function train_loop(η, λ)
     # %% Create the training data
-    H, U = generate_data(10000, n_trials, n_bins, p)
+    H, U = generate_data(10_000, n_trials, n_bins, p)
     dataloader = MLUtils.DataLoader((H, U); batchsize=B, parallel=true)
 
     # Create test data
@@ -265,7 +265,8 @@ function train_loop(η, λ)
             this_mmd_loss + this_l1_loss
         end
 
-        opt_state, W = Optimisers.update(opt_state, W, Δ[1])
+        #opt_state, W = Optimisers.update(opt_state, W, Δ[1])
+	    opt_state, W = Optimisers.update!(opt_state, W, Δ[1]) 
         @info "$i of $(length(dataloader))"
         @info "loss = $(round(L; digits=3))"
 
@@ -283,18 +284,18 @@ function train_loop(η, λ)
             η
         )
         
-        # # early stopping
-        # if L < best_loss
-        #     best_loss = L
-        #     patience_counter = 0
-        # else
-        #     patience_counter += 1
-        # end
-        # if patience_counter > 100
-        #     _evalcb(W, opt_state, L, acc, λ, η)
-        #     @info "early stopping triggered"
-        #     break
-        # end
+        # early stopping
+        if L < best_loss
+            best_loss = L
+            patience_counter = 0
+        else
+            patience_counter += 1
+        end
+        if patience_counter > 100
+            _evalcb(W, opt_state, L, acc, λ, η)
+            @info "early stopping triggered"
+            break
+        end
 
     end
     
