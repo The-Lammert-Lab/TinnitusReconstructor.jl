@@ -7,6 +7,7 @@ using the synthetic subject.
 """
 
 # push!(LOAD_PATH, "..")
+cd("/home/alec/code/TinnitusReconstructor.jl/scripts/")
 
 using Optimisers
 using Zygote
@@ -41,7 +42,7 @@ const decay = 0.0f0
 # Gaussian kernel standard deviation
 const σs = [2, 5, 10, 20, 40, 80]
 # Batch size
-const B = 8 # [150, 1500]
+const B = 4 # [150, 1500]
 # L1 loss coefficient
 const λ = 0.001f0
 
@@ -78,7 +79,7 @@ julia> TinnitusReconstructor.dB.([1, 2, 100])
 ````
 
 """
-dB(x) = 10log10(x)
+dB(x) = oftype(x/1, 10) * log10(x)
 
 @doc raw"""
     invdB(x)
@@ -102,7 +103,7 @@ julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
 * [`dB`](@ref)
 * [`db⁻¹`](@ref)
 """
-invdB(x) = 10^(x / 10)
+invdB(x) = oftype(x/1, 10) ^ (x / oftype(x/1, 10))
 
 # TODO: fix the regularization
 @doc """
@@ -130,7 +131,7 @@ julia> mmd_loss(1, 2)
 * [mmd](@ref mmd)
 """
 function mmd_loss(x, x̂; σs=[1])
-    return sum(mmd(x, x̂, σ) for σ in σs)
+    return sum(mmd(x, x̂; σ=σ) for σ in σs)
 end
 
 """
@@ -158,7 +159,7 @@ function generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
     for u in eachcol(U)
         u .= u / norm(u)
     end
-    return H, U
+    return Float32.(H), Float32.(U)
 end
 
 @doc """
@@ -240,7 +241,7 @@ end
 
 function train_loop(η, λ)
     # %% Create the training data
-    H, U = generate_data(10_000, n_trials, n_bins, p)
+    H, U = generate_data(100, n_trials, n_bins, p)
     dataloader = MLUtils.DataLoader((H, U); batchsize=B, parallel=true)
 
     # Create test data
@@ -270,32 +271,32 @@ function train_loop(η, λ)
         @info "$i of $(length(dataloader))"
         @info "loss = $(round(L; digits=3))"
 
-        # Callbacks
-        _, acc = eval_cb(
-            W,
-            stimgen,
-            target_signals,
-            binned_target_signals,
-            p,
-            model,
-            opt_state,
-            L,
-            λ,
-            η
-        )
+        # # Callbacks
+        # _, acc = eval_cb(
+        #     W,
+        #     stimgen,
+        #     target_signals,
+        #     binned_target_signals,
+        #     p,
+        #     model,
+        #     opt_state,
+        #     L,
+        #     λ,
+        #     η
+        # )
         
-        # early stopping
-        if L < best_loss
-            best_loss = L
-            patience_counter = 0
-        else
-            patience_counter += 1
-        end
-        if patience_counter > 100
-            _evalcb(W, opt_state, L, acc, λ, η)
-            @info "early stopping triggered"
-            break
-        end
+        # # early stopping
+        # if L < best_loss
+        #     best_loss = L
+        #     patience_counter = 0
+        # else
+        #     patience_counter += 1
+        # end
+        # if patience_counter > 100
+        #     _evalcb(W, opt_state, L, acc, λ, η)
+        #     @info "early stopping triggered"
+        #     break
+        # end
 
     end
     
@@ -305,11 +306,12 @@ function train_loop(η, λ)
 end
 
 function main()
-    ηs = Float32.(10. .^ [-1, -2, -3, -4])
-    λs = Float32.(10. .^ [0, -1, -2, -3])
-    @showprogress for (η, λ) in product(ηs, λs)
-        train_loop(η, λ)
-    end
+    # ηs = Float32.(10. .^ [-1, -2, -3, -4])
+    # λs = Float32.(10. .^ [0, -1, -2, -3])
+    # @showprogress for (η, λ) in product(ηs, λs)
+    #     train_loop(η, λ)
+    # end
+    train_loop(1f-2, 1f0)
 end
 
-main()
+@time main()

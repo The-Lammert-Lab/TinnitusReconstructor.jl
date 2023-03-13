@@ -26,28 +26,29 @@ julia> mmd(1, 2; σ=2)
 ```
 """
 function mmd(x, y; σ=1)
+    T = eltype(x)
     M = length(x)
     N = length(y)
 
-    mmd = 0
+    mmd = zero(T)
+    running_total = zero(T)
 
-    running_total = 0
     for i in 1:M, j in 1:M
         running_total += gaussian_kernel(x[i], x[j]; σ=σ)
     end
-    mmd += (running_total / M^2)
+    mmd += (running_total / convert(T, M) ^ convert(T, 2))
 
-    running_total = 0
+    running_total = zero(T)
     for i in 1:M, j in 1:N
         running_total += gaussian_kernel(x[i], y[j]; σ=σ)
     end
-    mmd -= (2 / (M * N) * running_total)
+    mmd -= (convert(T, 2) / convert(T, M * N) * running_total)
 
-    running_total = 0
+    running_total = zero(T)
     for i in 1:N, j in 1:N
         running_total += gaussian_kernel(y[i], y[j]; σ=σ)
     end
-    mmd += (running_total / N^2)
+    mmd += (running_total / convert(T, N) ^ convert(T, 2))
 
     return mmd
 end
@@ -67,7 +68,7 @@ julia> TinnitusReconstructor.gaussian_kernel(1, 1)
 ```
 """
 function gaussian_kernel(x, y; σ=1)
-    return @. exp(-1 / (2 * σ^2) * abs(x - y)^2)
+    return exp(-one(typeof(x)) / (oftype(x/1, 2) * oftype(x/1, σ)^oftype(x/1, 2)) * abs(x - y)^oftype(x/1, 2))
 end
 
 @doc raw"""
