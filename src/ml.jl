@@ -4,7 +4,7 @@ using Flux: create_bias
 using Functors
 import Base: show
 using LinearAlgebra
-using Random: AbstractRNG
+using Random: AbstractRNG, default_rng
 
 """
     mmd(x, y; σ=1)
@@ -36,7 +36,7 @@ function mmd(x, y; σ=1)
     for i in 1:M, j in 1:M
         running_total += gaussian_kernel(x[i], x[j]; σ=σ)
     end
-    mmd += (running_total / convert(T, M) ^ convert(T, 2))
+    mmd += (running_total / convert(T, M)^convert(T, 2))
 
     running_total = zero(T)
     for i in 1:M, j in 1:N
@@ -48,7 +48,7 @@ function mmd(x, y; σ=1)
     for i in 1:N, j in 1:N
         running_total += gaussian_kernel(y[i], y[j]; σ=σ)
     end
-    mmd += (running_total / convert(T, N) ^ convert(T, 2))
+    mmd += (running_total / convert(T, N)^convert(T, 2))
 
     return mmd
 end
@@ -68,7 +68,10 @@ julia> TinnitusReconstructor.gaussian_kernel(1, 1)
 ```
 """
 function gaussian_kernel(x, y; σ=1)
-    return exp(-one(typeof(x)) / (oftype(x/1, 2) * oftype(x/1, σ)^oftype(x/1, 2)) * abs(x - y)^oftype(x/1, 2))
+    return exp(
+        -one(typeof(x)) / (oftype(x / 1, 2) * oftype(x / 1, σ)^oftype(x / 1, 2)) *
+        abs(x - y)^oftype(x / 1, 2),
+    )
 end
 
 @doc raw"""
@@ -175,4 +178,64 @@ function scaled_uniform(dims::Integer...; kw...)
 end
 function scaled_uniform(rng::AbstractRNG=Flux.default_rng_value(); init_kwargs...)
     return (dims...; kwargs...) -> scaled_uniform(rng, dims...; init_kwargs..., kwargs...)
+end
+
+# TODO: fix the regularization
+@doc """
+    mmd_loss(x, x̂; σs=[1])
+
+Compute the mean maximum discrepancy loss
+with a Gaussian kernel.
+`σs` is a list of kernel sizes (standard deviations)
+that the loss is summed over.
+
+# Examples
+```jldoctest
+julia> mmd_loss(1, 1; σs=[1, 2, 3])
+0.0
+
+julia> mmd_loss(1, 1)
+0.0
+
+julia> mmd_loss(1, 2)
+0.7869386805747332
+```
+
+# See Also
+
+* [mmd](@ref mmd)
+"""
+function mmd_loss(x, x̂; σs=[1])
+    return sum(mmd(x, x̂; σ=σ) for σ in σs)
+end
+
+"""
+    generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
+
+Generate `n_samples` training samples of length `n`
+with sparsity `p`.
+The size of `H` is `n × n_samples`
+and the size of `U` is `m x n_samples`.
+Note that these samples are sparse in the standard basis (identity matrix).
+"""
+function generate_data(rng::AbstractRNG, n_samples::T, m::T, n::T, p::T) where {T<:Integer}
+    # Generate a Gaussian random matrix
+    H = randn(rng, Float32, n, n_samples) ./ p
+    # Set all but p indices in each row to zero
+    for h in eachcol(H)
+        indices = sample(1:n, n - p; replace=false)
+        h[indices] .= 0
+    end
+    # Rescale
+    H /= sqrt(norm(H) / n_samples)
+
+    # Compute the label data
+    U = randn(rng, Float32, m, n_samples)
+    for u in eachcol(U)
+        u .= u / norm(u)
+    end
+    return Float32.(H), Float32.(U)
+end
+function generate_data(n_samples::T, m::T, n::T, p::T) where {T <: Integer}
+    generate_data(default_rng(), n_samples, m, n, p)
 end

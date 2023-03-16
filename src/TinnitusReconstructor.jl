@@ -27,8 +27,8 @@ export nsamples, fs, mels2hz, hz2mels
 export empty_spectrum
 export synthesize_audio
 export crop_signal, crop_signal!
-export mmd, stk, phase_to_mm, TransformedDense, scaled_uniform
 # export dB, invdB
+
 
 function present_stimulus(s::Stimgen)
     stimuli_matrix, Fs, _, _ = generate_stimuli_matrix(s)

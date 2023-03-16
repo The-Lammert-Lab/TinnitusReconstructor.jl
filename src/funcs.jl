@@ -169,9 +169,7 @@ end
 @doc """
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 """
-function subject_selection_process(
-    stimuli::AbstractArray, target_signal::AbstractMatrix
-)
+function subject_selection_process(stimuli::AbstractArray, target_signal::AbstractMatrix)
     return subject_selection_process(stimuli, vec(target_signal))
 end
 
@@ -225,3 +223,47 @@ function wav2spect(audio_file::String; duration=0.5)
 
     return mean(abs.(S); dims=2)
 end
+
+@doc raw"""
+    dB(x)
+
+Convert from amplitude-scale to decibel-scale via
+
+``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
+
+# Examples
+```jldoctest
+
+julia> TinnitusReconstructor.dB.([1, 2, 100])
+3-element Vector{Float64}:
+  0.0
+  3.010299956639812
+ 20.0
+````
+
+"""
+dB(x) = oftype(x / 1, 10) * log10(x)
+
+@doc raw"""
+    invdB(x)
+
+Convert from decibel-scale to amplitude-scale via
+
+``\mathrm{invdB}(x) = 10^{x/10}``
+
+# Examples
+```jldoctest
+julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
+5-element Vector{Float64}:
+ 1.0e-10
+ 1.0
+ 1.2589254117941673
+ 1.5848931924611136
+ 1.0e10
+```
+
+# See also
+* [`dB`](@ref)
+* [`db⁻¹`](@ref)
+"""
+invdB(x) = oftype(x / 1, 10)^(x / oftype(x / 1, 10))

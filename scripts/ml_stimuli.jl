@@ -23,6 +23,7 @@ using BSON: @save
 using Dates
 using Random
 using Base.Iterators: product
+using Flux
 
 const rng = MersenneTwister(1234)
 
@@ -261,9 +262,10 @@ function train_loop(η, λ)
     for (i, (h, u)) in enumerate(dataloader)
         # Zygote.gradient(W -> loss(model(h, W), u), W)
         L, Δ = Zygote.withgradient(W) do W
-            this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
-            this_l1_loss = λ * norm(invdB.(W), 1)
-            this_mmd_loss + this_l1_loss
+            # this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
+            # this_l1_loss = λ * norm(invdB.(W), 1)
+            # this_mmd_loss + this_l1_loss
+            Flux.Losses.mse(model(h, W), u)
         end
 
         #opt_state, W = Optimisers.update(opt_state, W, Δ[1])
