@@ -5,6 +5,7 @@ using Functors
 import Base: show
 using LinearAlgebra
 using Random: AbstractRNG, default_rng
+using Tullio
 
 """
     mmd(x, y; σ=1)
@@ -29,26 +30,17 @@ function mmd(x, y; σ=1)
     T = eltype(x)
     M = length(x)
     N = length(y)
+    pre = T(-1/(2 * σ * σ))
 
-    mmd = zero(T)
-    running_total = zero(T)
+    # Here the macro can see the function & compute symbolic derivatives:
+    @tullio running_total := exp(pre * abs2(x[i] - x[j]))
+    mmd = running_total / M^2
 
-    for i in 1:M, j in 1:M
-        running_total += gaussian_kernel(x[i], x[j]; σ=σ)
-    end
-    mmd += (running_total / convert(T, M)^convert(T, 2))
+    @tullio running_total2 := exp(pre * abs2(x[i] - y[j]))
+    mmd -= 2 * running_total2 / (M * N)
 
-    running_total = zero(T)
-    for i in 1:M, j in 1:N
-        running_total += gaussian_kernel(x[i], y[j]; σ=σ)
-    end
-    mmd -= (convert(T, 2) / convert(T, M * N) * running_total)
-
-    running_total = zero(T)
-    for i in 1:N, j in 1:N
-        running_total += gaussian_kernel(y[i], y[j]; σ=σ)
-    end
-    mmd += (running_total / convert(T, N)^convert(T, 2))
+    @tullio running_total3 := exp(pre * abs2(y[i] - y[j]))
+    mmd += running_total3 / N^2
 
     return mmd
 end
@@ -69,8 +61,8 @@ julia> TinnitusReconstructor.gaussian_kernel(1, 1)
 """
 function gaussian_kernel(x, y; σ=1)
     return exp(
-        -one(typeof(x)) / (oftype(x / 1, 2) * oftype(x / 1, σ)^oftype(x / 1, 2)) *
-        abs(x - y)^oftype(x / 1, 2),
+        -one(typeof(x)) / (oftype(x / 1, 2) * oftype(x / 1, σ) * oftype(x / 1, σ)) *
+        abs2(x - y)
     )
 end
 
