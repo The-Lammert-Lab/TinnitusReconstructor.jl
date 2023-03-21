@@ -58,13 +58,13 @@ Constructor for stimulus generation type in which
 - `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
 """
 function UniformPrior(;
-    min_freq = 100.0,
-    max_freq = 22e3,
-    duration = 0.5,
-    Fs = 44.1e3,
-    n_bins = 100,
-    min_bins = 10,
-    max_bins = 50,
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    min_bins=10,
+    max_bins=50,
 )
     return UniformPrior(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
 end
