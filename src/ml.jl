@@ -13,6 +13,8 @@ using Tullio
 Compute the maximum mean discrepancy (MMD)
 between `x` and `y` using a Gaussian kernel
 with standard deviation parameter `σ`.
+For computational efficiency, σ should be an integer
+or a 32-bit float.
 
 # Examples
 ```jldoctest
@@ -30,7 +32,7 @@ function mmd(x, y; σ=1)
     T = eltype(x)
     M = length(x)
     N = length(y)
-    pre = T(-1/(2 * σ * σ))
+    pre = -1/(2 * σ * σ) # TODO: make this type-stable
 
     # Here the macro can see the function & compute symbolic derivatives:
     @tullio running_total := exp(pre * abs2(x[i] - x[j]))
@@ -172,7 +174,6 @@ function scaled_uniform(rng::AbstractRNG=Flux.default_rng_value(); init_kwargs..
     return (dims...; kwargs...) -> scaled_uniform(rng, dims...; init_kwargs..., kwargs...)
 end
 
-# TODO: fix the regularization
 @doc """
     mmd_loss(x, x̂; σs=[1])
 
@@ -198,7 +199,7 @@ julia> mmd_loss(1, 2)
 * [mmd](@ref mmd)
 """
 function mmd_loss(x, x̂; σs=[1])
-    return sum(mmd(x, x̂; σ=σ) for σ in σs)
+    return mapreduce(σ -> mmd(x, x̂; σ=σ), +, σs)
 end
 
 """

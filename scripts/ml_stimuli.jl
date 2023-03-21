@@ -9,21 +9,12 @@ using the synthetic subject.
 # push!(LOAD_PATH, "..")
 cd("/home/alec/code/TinnitusReconstructor.jl/scripts/")
 
-using Optimisers
-using Zygote
+using Flux
+using Flux.Optimise: Adam, train!
+using Flux.Data: DataLoader
+using Random: MersenneTwister
 using TinnitusReconstructor
 using LinearAlgebra
-using StatsBase: sample
-using MLUtils
-using ProgressMeter
-using FileIO
-using Statistics
-using Flux: throttle
-using BSON: @save
-using Dates
-using Random
-using Base.Iterators: product
-using Flux
 
 const rng = MersenneTwister(1234)
 
@@ -62,121 +53,111 @@ const tinnitus_sound_paths = (
 
 # %% Useful functions
 
-@doc raw"""
-    dB(x)
+# @doc raw"""
+#     dB(x)
 
-Convert from amplitude-scale to decibel-scale via
+# Convert from amplitude-scale to decibel-scale via
 
-``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
+# ``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
 
-# Examples
-```jldoctest
+# # Examples
+# ```jldoctest
 
-julia> TinnitusReconstructor.dB.([1, 2, 100])
-3-element Vector{Float64}:
-  0.0
-  3.010299956639812
- 20.0
-````
+# julia> TinnitusReconstructor.dB.([1, 2, 100])
+# 3-element Vector{Float64}:
+#   0.0
+#   3.010299956639812
+#  20.0
+# ````
 
-"""
-dB(x) = oftype(x/1, 10) * log10(x)
+# """
+# dB(x) = oftype(x/1, 10) * log10(x)
 
-@doc raw"""
-    invdB(x)
+# @doc raw"""
+#     invdB(x)
 
-Convert from decibel-scale to amplitude-scale via
+# Convert from decibel-scale to amplitude-scale via
 
-``\mathrm{invdB}(x) = 10^{x/10}``
+# ``\mathrm{invdB}(x) = 10^{x/10}``
 
-# Examples
-```jldoctest
-julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
-5-element Vector{Float64}:
- 1.0e-10
- 1.0
- 1.2589254117941673
- 1.5848931924611136
- 1.0e10
-```
+# # Examples
+# ```jldoctest
+# julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
+# 5-element Vector{Float64}:
+#  1.0e-10
+#  1.0
+#  1.2589254117941673
+#  1.5848931924611136
+#  1.0e10
+# ```
 
-# See also
-* [`dB`](@ref)
-* [`db⁻¹`](@ref)
-"""
-invdB(x) = oftype(x/1, 10) ^ (x / oftype(x/1, 10))
+# # See also
+# * [`dB`](@ref)
+# * [`db⁻¹`](@ref)
+# """
+# invdB(x) = oftype(x/1, 10) ^ (x / oftype(x/1, 10))
 
-# TODO: fix the regularization
-@doc """
-    mmd_loss(x, x̂; σs=[1])
+# # TODO: fix the regularization
+# @doc """
+#     mmd_loss(x, x̂; σs=[1])
 
-Compute the mean maximum discrepancy loss
-with a Gaussian kernel.
-`σs` is a list of kernel sizes (standard deviations)
-that the loss is summed over.
+# Compute the mean maximum discrepancy loss
+# with a Gaussian kernel.
+# `σs` is a list of kernel sizes (standard deviations)
+# that the loss is summed over.
 
-# Examples
-```jldoctest
-julia> mmd_loss(1, 1; σs=[1, 2, 3])
-0.0
+# # Examples
+# ```jldoctest
+# julia> mmd_loss(1, 1; σs=[1, 2, 3])
+# 0.0
 
-julia> mmd_loss(1, 1)
-0.0
+# julia> mmd_loss(1, 1)
+# 0.0
 
-julia> mmd_loss(1, 2)
-0.7869386805747332
-```
+# julia> mmd_loss(1, 2)
+# 0.7869386805747332
+# ```
 
-# See Also
+# # See Also
 
-* [mmd](@ref mmd)
-"""
-function mmd_loss(x, x̂; σs=[1])
-    return sum(mmd(x, x̂; σ=σ) for σ in σs)
-end
+# * [mmd](@ref mmd)
+# """
+# function mmd_loss(x, x̂; σs=[1])
+#     return sum(mmd(x, x̂; σ=σ) for σ in σs)
+# end
 
-"""
-    generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
+# """
+#     generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
 
-Generate `n_samples` training samples of length `n`
-with sparsity `p`.
-The size of `H` is `n × n_samples`
-and the size of `U` is `m x n_samples`.
-Note that these samples are sparse in the standard basis (identity matrix).
-"""
-function generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
-    # Generate a Gaussian random matrix
-    H = randn(rng, Float32, n, n_samples) ./ p
-    # Set all but p indices in each row to zero
-    for h in eachcol(H)
-        indices = sample(1:n, n - p; replace=false)
-        h[indices] .= 0
-    end
-    # Rescale
-    H /= sqrt(norm(H) / n_samples)
+# Generate `n_samples` training samples of length `n`
+# with sparsity `p`.
+# The size of `H` is `n × n_samples`
+# and the size of `U` is `m x n_samples`.
+# Note that these samples are sparse in the standard basis (identity matrix).
+# """
+# function generate_data(n_samples::T, m::T, n::T, p::T) where {T<:Integer}
+#     # Generate a Gaussian random matrix
+#     H = randn(rng, Float32, n, n_samples) ./ p
+#     # Set all but p indices in each row to zero
+#     for h in eachcol(H)
+#         indices = sample(1:n, n - p; replace=false)
+#         h[indices] .= 0
+#     end
+#     # Rescale
+#     H /= sqrt(norm(H) / n_samples)
 
-    # Compute the label data
-    U = randn(rng, Float32, m, n_samples)
-    for u in eachcol(U)
-        u .= u / norm(u)
-    end
-    return Float32.(H), Float32.(U)
-end
-
-@doc """
-    model(x, W)
-
-Parameterize the optimization problem as a model
-with input `x` and weights `W`.
-"""
-function model(x, W)
-    return W * x
-end
+#     # Compute the label data
+#     U = randn(rng, Float32, m, n_samples)
+#     for u in eachcol(U)
+#         u .= u / norm(u)
+#     end
+#     return Float32.(H), Float32.(U)
+# end
 
 function load_test_data(n_bins, tinnitus_sound_paths)
     stimgen = UniformPrior(; n_bins=n_bins, min_freq=100., max_freq=13e3, min_bins=1, max_bins=1)
     target_signals = hcat(
-        [dB.(wav2spect(audio_path)) for audio_path in tinnitus_sound_paths]...
+        [TinnitusReconstructor.dB.(wav2spect(audio_path)) for audio_path in tinnitus_sound_paths]...
     )
 
     binned_target_signals = spect2binnedrepr(stimgen, target_signals)
@@ -209,103 +190,116 @@ function test(W::AbstractMatrix, s::SG, target_signals::AbstractMatrix, binned_t
     test(W, s, target_signals, binned_target_signals, p)
 end
 
-"""
-    evalcb(model, opt_state, loss, acc, λ) -> str
-
-Create a model name and save the model, loss, accuracy, and hyperparameters.
-"""
-function _evalcb(model, opt_state, loss, acc, λ, η)
-    loss = round(loss; digits=3)
-    acc = round(acc; digits=3)
-    @info "loss = $loss"
-    @info "acc = $acc"
-    @info "lr = $η"
-    model_name = "model-date=$(now())-loss=$(loss)-acc=$(acc)-lambda=$(λ)-lr=$(η).bson"
-    @save model_name model opt_state loss acc λ
-    @info "model saved to $model_name"
-    return model_name, acc
-end
-
-"""
-    create_eval_cb(timeout=1800)
-
-Create a throttled callback that saves the model, loss, accuracy, and hyperparameters
-"""
-function create_eval_cb(timeout=1800)
-    return throttle(
-        timeout
-    ) do W, stimgen, target_signals, binned_target_signals, p, model, opt_state, loss, λ, η
-        acc = test(W, stimgen, target_signals, binned_target_signals, p)
-        _evalcb(model, opt_state, loss, acc, λ, η)
-    end
-end
-
 function train_loop(η, λ)
-    # %% Create the training data
-    H, U = generate_data(100, n_trials, n_bins, p)
-    dataloader = MLUtils.DataLoader((H, U); batchsize=B, parallel=true)
+    model = Dense(n_bins, n_trials, identity; bias=false)
+    opt_state = Flux.setup(Adam(η, β), model)
+    H, U = TinnitusReconstructor.generate_data(100, n_trials, n_bins, p)
+    dataloader = DataLoader((H, U), batchsize=B)
 
-    # Create test data
-    stimgen, target_signals, binned_target_signals = load_test_data(n_bins, tinnitus_sound_paths)
-
-    # Instantiate parameters
-    W = randn(rng, Float32, n_trials, n_bins)
-    opt_state = Optimisers.setup(Optimisers.Adam(η, β), W)
-
-    # Callbacks
-    eval_cb = create_eval_cb()
-
-    # Main loop
-    patience_counter = 0
-    best_loss = Inf
-
-    for (i, (h, u)) in enumerate(dataloader)
-        # Zygote.gradient(W -> loss(model(h, W), u), W)
-        L, Δ = Zygote.withgradient(W) do W
-            # this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
-            # this_l1_loss = λ * norm(invdB.(W), 1)
-            # this_mmd_loss + this_l1_loss
-            Flux.Losses.mse(model(h, W), u)
-        end
-
-        #opt_state, W = Optimisers.update(opt_state, W, Δ[1])
-	    opt_state, W = Optimisers.update!(opt_state, W, Δ[1]) 
-        @info "$i of $(length(dataloader))"
-        @info "loss = $(round(L; digits=3))"
-
-        # # Callbacks
-        # _, acc = eval_cb(
-        #     W,
-        #     stimgen,
-        #     target_signals,
-        #     binned_target_signals,
-        #     p,
-        #     model,
-        #     opt_state,
-        #     L,
-        #     λ,
-        #     η
-        # )
-        
-        # # early stopping
-        # if L < best_loss
-        #     best_loss = L
-        #     patience_counter = 0
-        # else
-        #     patience_counter += 1
-        # end
-        # if patience_counter > 100
-        #     _evalcb(W, opt_state, L, acc, λ, η)
-        #     @info "early stopping triggered"
-        #     break
-        # end
-
+    @time train!(model, dataloader, opt_state) do m, x, y
+        this_mmd_loss = TinnitusReconstructor.mmd_loss(m(x), y; σs=[2, 5, 10, 20, 40, 80])
+        this_l1_loss = λ * norm(TinnitusReconstructor.invdB.(m.weight), 1)
+        this_mmd_loss + this_l1_loss
     end
-    
-    @info "DONE!"
-
-    # return save("weights.jld2", abs.(W))
 end
+
+# """
+#     evalcb(model, opt_state, loss, acc, λ) -> str
+
+# Create a model name and save the model, loss, accuracy, and hyperparameters.
+# """
+# function _evalcb(model, opt_state, loss, acc, λ, η)
+#     loss = round(loss; digits=3)
+#     acc = round(acc; digits=3)
+#     @info "loss = $loss"
+#     @info "acc = $acc"
+#     @info "lr = $η"
+#     model_name = "model-date=$(now())-loss=$(loss)-acc=$(acc)-lambda=$(λ)-lr=$(η).bson"
+#     @save model_name model opt_state loss acc λ
+#     @info "model saved to $model_name"
+#     return model_name, acc
+# end
+
+# """
+#     create_eval_cb(timeout=1800)
+
+# Create a throttled callback that saves the model, loss, accuracy, and hyperparameters
+# """
+# function create_eval_cb(timeout=1800)
+#     return throttle(
+#         timeout
+#     ) do W, stimgen, target_signals, binned_target_signals, p, model, opt_state, loss, λ, η
+#         acc = test(W, stimgen, target_signals, binned_target_signals, p)
+#         _evalcb(model, opt_state, loss, acc, λ, η)
+#     end
+# end
+
+# function train_loop(η, λ)
+#     # %% Create the training data
+#     H, U = generate_data(100, n_trials, n_bins, p)
+#     dataloader = MLUtils.DataLoader((H, U); batchsize=B, parallel=true)
+
+#     # Create test data
+#     stimgen, target_signals, binned_target_signals = load_test_data(n_bins, tinnitus_sound_paths)
+
+#     # Instantiate parameters
+#     W = randn(rng, Float32, n_trials, n_bins)
+#     opt_state = Optimisers.setup(Optimisers.Adam(η, β), W)
+
+#     # Callbacks
+#     eval_cb = create_eval_cb()
+
+#     # Main loop
+#     patience_counter = 0
+#     best_loss = Inf
+
+#     for (i, (h, u)) in enumerate(dataloader)
+#         # Zygote.gradient(W -> loss(model(h, W), u), W)
+#         L, Δ = Zygote.withgradient(W) do W
+#             # this_mmd_loss = mmd_loss(model(h, W), u; σs=σs)
+#             # this_l1_loss = λ * norm(invdB.(W), 1)
+#             # this_mmd_loss + this_l1_loss
+#             Flux.Losses.mse(model(h, W), u)
+#         end
+
+#         #opt_state, W = Optimisers.update(opt_state, W, Δ[1])
+# 	    opt_state, W = Optimisers.update!(opt_state, W, Δ[1]) 
+#         @info "$i of $(length(dataloader))"
+#         @info "loss = $(round(L; digits=3))"
+
+#         # # Callbacks
+#         # _, acc = eval_cb(
+#         #     W,
+#         #     stimgen,
+#         #     target_signals,
+#         #     binned_target_signals,
+#         #     p,
+#         #     model,
+#         #     opt_state,
+#         #     L,
+#         #     λ,
+#         #     η
+#         # )
+        
+#         # # early stopping
+#         # if L < best_loss
+#         #     best_loss = L
+#         #     patience_counter = 0
+#         # else
+#         #     patience_counter += 1
+#         # end
+#         # if patience_counter > 100
+#         #     _evalcb(W, opt_state, L, acc, λ, η)
+#         #     @info "early stopping triggered"
+#         #     break
+#         # end
+
+#     end
+    
+#     @info "DONE!"
+
+#     # return save("weights.jld2", abs.(W))
+# end
 
 function main()
     # ηs = Float32.(10. .^ [-1, -2, -3, -4])
