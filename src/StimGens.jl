@@ -69,6 +69,61 @@ function UniformPrior(;
     return UniformPrior(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
 end
 
+struct GaussianPrior <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    n_bins_filled_mean::Int
+    n_bins_filled_var::Real
+
+    # Inner constructor to validate inputs
+    function GaussianPrior(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        n_bins_filled_mean::Integer,
+        n_bins_filled_var::Real
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins n_bins_filled_mean n_bins_filled_var]) "All arguments must be greater than 0"
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        return new(min_freq, max_freq, duration, Fs, n_bins, n_bins_filled_mean, n_bins_filled_var)
+    end
+end
+
+"""
+    GaussianPrior(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    the number of filled bins is selected from 
+    from a Gaussian distribution with known mean and variance parameters.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `n_bins_filled_mean::Integer = 20`: The mean number of bins that may be filled on any stimuli.
+- `n_bins_filled_var::Real = 1`: The variance of number of bins that may be filled on any stimuli.
+"""
+function GaussianPrior(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    n_bins_filled_mean=20,
+    n_bins_filled_var=1,
+)
+    return GaussianPrior(min_freq, max_freq, duration, Fs, n_bins, n_bins_filled_mean, n_bins_filled_var)
+end
+
+
 #############################
 
 ## Stimgen functions  
@@ -263,21 +318,26 @@ end
 
 #############################
 
-# UniformPrior
+const unfilled_db = -100
+
 @doc """
     generate_stimulus(s::UniformPrior)
+    generate_stimulus(s::GaussianPrior)
 
 Generate one stimulus sound.
 
 Returns waveform, sample rate, spectral representation, binned representation, and a frequency vector.  
 """
+function generate_stimulus end
+
+# UniformPrior
 function generate_stimulus(s::UniformPrior)
     # Define Frequency Bin Indices 1 through self.n_bins
     binnum, Fs, nfft, frequency_vector = freq_bins(s)
     spect = empty_spectrum(s)
 
     # sample from uniform distribution to get the number of bins to fill
-    n_bins_to_fill = rand((s.min_bins):(s.max_bins))
+    n_bins_to_fill = rand(DiscreteUniform(s.min_bins, s.max_bins))
     bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace=false)
 
     # Set spectrum ranges corresponding to bins to 0dB.
@@ -287,7 +347,30 @@ function generate_stimulus(s::UniformPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = -100 * ones(s.n_bins)
+    binned_repr = unfilled_db * ones(s.n_bins)
+    binned_repr[bins_to_fill] .= 0
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# GaussianPrior
+function generate_stimulus(s::GaussianPrior)
+    binnum, Fs, nfft, frequency_vector = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    # sample from gaussian distribution to get the number of bins to fill
+    d = truncated(Normal(s.n_bins_filled_mean, sqrt(s.n_bins_filled_var)), 1, s.n_bins)
+    n_bins_to_fill = round(rand(d))
+    bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace=false)
+
+    # Set spectrum ranges corresponding to bins to 0dB.
+    [spect[binnum .== bins_to_fill[i]] .= 0 for i in 1:n_bins_to_fill]
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    # get the binned representation
+    binned_repr = unfilled_db * ones(s.n_bins)
     binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
