@@ -9,7 +9,8 @@ using LibSndFile
 using DSP
 using Memoize
 using FastBroadcast
-using Distributions
+import Distributions # Import to avoid name conflicts. 
+# Could switch to using: truncated, Normal, DiscreteUniform
 
 include("funcs.jl")
 include("StimGens.jl")

@@ -3,6 +3,9 @@
 ## Type definitions
 
 #############################
+"dB level of unfilled bins"
+const unfilled_db = -100
+
 "Abstract supertype for all stimulus generation."
 abstract type Stimgen end
 
@@ -121,6 +124,57 @@ function GaussianPrior(;
     n_bins_filled_var=1,
 )
     return GaussianPrior(min_freq, max_freq, duration, Fs, n_bins, n_bins_filled_mean, n_bins_filled_var)
+end
+
+struct Bernoulli <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    bin_prob::Real
+
+    # Inner constructor to validate inputs
+    function Bernoulli(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        bin_prob::Real,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins n_bins_filled_mean n_bins_filled_var]) "All arguments must be greater than 0"
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert bin_prob <= 1 "`bin_prob` must be less than or equal to 1."
+        return new(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
+    end
+end
+
+"""
+    Bernoulli(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each tonotopic bin has a probability `bin_prob`
+    of being at 0 dB, otherwise it is at $(unfilled_db) dB.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `bin_prob::Real=0.3`: The probability of a bin being filled.
+"""
+function Bernoulli(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    bin_prob=0.3,
+)
+    return Bernoulli(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
 end
 
 
@@ -318,8 +372,6 @@ end
 
 #############################
 
-const unfilled_db = -100
-
 @doc """
     generate_stimulus(s::UniformPrior)
     generate_stimulus(s::GaussianPrior)
@@ -337,7 +389,7 @@ function generate_stimulus(s::UniformPrior)
     spect = empty_spectrum(s)
 
     # sample from uniform distribution to get the number of bins to fill
-    n_bins_to_fill = rand(DiscreteUniform(s.min_bins, s.max_bins))
+    n_bins_to_fill = rand(Distributions.DiscreteUniform(s.min_bins, s.max_bins))
     bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace=false)
 
     # Set spectrum ranges corresponding to bins to 0dB.
@@ -347,7 +399,7 @@ function generate_stimulus(s::UniformPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(s.n_bins)
+    binned_repr = unfilled_db * ones(Int, s.n_bins)
     binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
@@ -359,7 +411,7 @@ function generate_stimulus(s::GaussianPrior)
     spect = empty_spectrum(s)
 
     # sample from gaussian distribution to get the number of bins to fill
-    d = truncated(Normal(s.n_bins_filled_mean, sqrt(s.n_bins_filled_var)), 1, s.n_bins)
+    d = Distributions.truncated(Distributions.Normal(s.n_bins_filled_mean, sqrt(s.n_bins_filled_var)), 1, s.n_bins)
     n_bins_to_fill = round(rand(d))
     bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace=false)
 
@@ -370,8 +422,24 @@ function generate_stimulus(s::GaussianPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(s.n_bins)
+    binned_repr = unfilled_db * ones(Int, s.n_bins)
     binned_repr[bins_to_fill] .= 0
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# Bernoulli
+function generate_stimulus(s::Bernoulli)
+    binnum, Fs, nfft, frequency_vector = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr[rand(s.n_bins) .< s.bin_prob] .= 0
+
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
 
     return stim, Fs, spect, binned_repr, frequency_vector
 end
