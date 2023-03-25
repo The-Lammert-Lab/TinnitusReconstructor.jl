@@ -9,7 +9,6 @@ using LibSndFile
 using DSP
 using Memoize
 using FastBroadcast
-using Tullio
 
 include("funcs.jl")
 include("StimGens.jl")

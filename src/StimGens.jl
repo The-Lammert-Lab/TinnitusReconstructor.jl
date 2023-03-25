@@ -13,6 +13,33 @@ Abstract supertype for all binned stimulus generation.
 """
 abstract type BinnedStimgen <: Stimgen end
 
+struct UniformPrior <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    min_bins::Int
+    max_bins::Int
+
+    # Inner constructor to validate inputs
+    function UniformPrior(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        min_bins::Integer,
+        max_bins::Integer,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins min_bins max_bins]) "All arguments must be greater than 0"
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert min_bins <= max_bins "`min_bins` cannot be greater than `max_bins`. `min_bins` = $min_bins, `max_bins` = $max_bins."
+        @assert max_bins <= n_bins "`max_bins` cannot be greater than `n_bins`. `max_bins` = $max_bins, `n_bins` = $n_bins."
+        return new(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
+    end
+end
+
 """
     UniformPrior(; kwargs...) <: BinnedStimgen
 
@@ -30,31 +57,16 @@ Constructor for stimulus generation type in which
 - `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
 - `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
 """
-struct UniformPrior <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    min_bins::Int
-    max_bins::Int
-
-    # Inner constructor to validate inputs
-    function UniformPrior(;
-        min_freq::R=100.0,
-        max_freq::R=22e3,
-        duration::R=0.5,
-        Fs::R=44.1e3,
-        n_bins::I=100,
-        min_bins::I=10,
-        max_bins::I=50,
-    ) where {R<:Real,I<:Integer}
-        @assert any(x -> x > 0, [min_freq max_freq duration Fs n_bins min_bins max_bins]) "All arguements must be greater than 0"
-        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
-        @assert min_bins <= max_bins "`min_bins` cannot be greater than `max_bins`. `min_bins` = $min_bins, `max_bins` = $max_bins."
-        @assert max_bins <= n_bins "`max_bins` cannot be greater than `n_bins`. `max_bins` = $max_bins, `n_bins` = $n_bins."
-        return new(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
-    end
+function UniformPrior(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    min_bins=10,
+    max_bins=50,
+)
+    return UniformPrior(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
 end
 
 #############################
