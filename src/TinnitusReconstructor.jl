@@ -13,7 +13,6 @@ using Tullio
 
 include("funcs.jl")
 include("StimGens.jl")
-include("ml.jl")
 
 export UniformPrior
 export present_stimulus
@@ -28,7 +27,6 @@ export nsamples, fs, mels2hz, hz2mels
 export empty_spectrum
 export synthesize_audio
 export crop_signal, crop_signal!
-# export dB, invdB
 
 
 function present_stimulus(s::Stimgen)
