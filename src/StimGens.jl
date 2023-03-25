@@ -143,7 +143,7 @@ struct Bernoulli <: BinnedStimgen
         n_bins::Integer,
         bin_prob::Real,
     )
-        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins n_bins_filled_mean n_bins_filled_var]) "All arguments must be greater than 0"
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins bin_prob]) "All arguments must be greater than 0"
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert bin_prob <= 1 "`bin_prob` must be less than or equal to 1."
         return new(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
@@ -175,6 +175,66 @@ function Bernoulli(;
     bin_prob=0.3,
 )
     return Bernoulli(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
+end
+
+struct Brimijoin <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    amp_min::Real
+    amp_max::Real
+    amp_step::Int
+
+    # Inner constructor to validate inputs
+    function Brimijoin(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        amp_min::Real,
+        amp_max::Real,
+        amp_step::Integer,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude arguments can be less than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert amp_min < amp_max "`amp_min` must be less than `amp_max`."
+        @assert amp_step > 1 "`amp_step` must be greater than 1."
+        return new(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
+    end
+end
+
+"""
+    Brimijoin(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each tonotopic bin is filled with an amplitude 
+    value from an equidistant list with equal probability.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `amp_min::Real = -20`: The lowest dB value a bin can have.
+- `amp_max::Real = 0`: The highest dB value a bin can have.
+- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+"""
+function Brimijoin(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    amp_min=-20,
+    amp_max=0,
+    amp_step=6,
+)
+    return Brimijoin(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
 end
 
 
@@ -373,12 +433,11 @@ end
 #############################
 
 @doc """
-    generate_stimulus(s::UniformPrior)
-    generate_stimulus(s::GaussianPrior)
+    generate_stimulus(s::Stimgen)
 
 Generate one stimulus sound.
 
-Returns waveform, sample rate, spectral representation, binned representation, and a frequency vector.  
+Returns waveform, sample rate, spectral representation, binned representation, and a frequency vector. Methods are specialized for each concrete subtype of Stimgen.
 """
 function generate_stimulus end
 
@@ -433,9 +492,28 @@ function generate_stimulus(s::Bernoulli)
     binnum, Fs, nfft, frequency_vector = freq_bins(s)
     spect = empty_spectrum(s)
 
+    # Get binned representation
     binned_repr = unfilled_db * ones(Int, s.n_bins)
     binned_repr[rand(s.n_bins) .< s.bin_prob] .= 0
 
+    # Set spectrum ranges corresponding to bins to bin level.
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# Brimijoin
+function generate_stimulus(s::Brimijoin)
+    binnum, Fs, nfft, frequency_vector = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    # Get binned representation by sampling with replacement
+    binned_repr = sample(range(s.amp_min, s.amp_max, s.amp_step), s.n_bins)
+
+    # Set spectrum ranges corresponding to bin levels.
     [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
 
     # Synthesize Audio
