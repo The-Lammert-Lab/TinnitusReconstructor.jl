@@ -237,6 +237,67 @@ function Brimijoin(;
     return Brimijoin(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
 end
 
+struct BrimijoinGaussianSmoothed <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    amp_min::Real
+    amp_max::Real
+    amp_step::Int
+
+    # Inner constructor to validate inputs
+    function BrimijoinGaussianSmoothed(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        amp_min::Real,
+        amp_max::Real,
+        amp_step::Integer,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude arguments can be less than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert amp_min < amp_max "`amp_min` must be less than `amp_max`."
+        @assert amp_step > 1 "`amp_step` must be greater than 1."
+        return new(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
+    end
+end
+
+"""
+    BrimijoinGaussianSmoothed(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each tonotopic bin is filled by a Gaussian 
+    with a maximum amplitude value chosen
+    from an equidistant list with equal probability.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `amp_min::Real = -20`: The lowest dB value a bin can have.
+- `amp_max::Real = 0`: The highest dB value a bin can have.
+- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+"""
+function BrimijoinGaussianSmoothed(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    amp_min=-20,
+    amp_max=0,
+    amp_step=6,
+)
+    return BrimijoinGaussianSmoothed(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
+end
+
 
 #############################
 
@@ -366,25 +427,25 @@ Generates a vector indicating which frequencies belong to the same bin,
                 collect(range(hz2mels.(s.min_freq), hz2mels.(s.max_freq), s.n_bins + 1))
             )
         )
-    binst = bintops[1:(end - 1)]
-    binnd = bintops[2:end]
+    bin_starts = bintops[1:(end - 1)]
+    bin_stops = bintops[2:end]
     binnum = zeros(Int, nfft ÷ 2)
     frequency_vector = collect(range(0, Fs ÷ 2, nfft ÷ 2))
 
     # This is a slow point
     for i in 1:(s.n_bins)
-        @.. binnum[(frequency_vector <= binnd[i]) & (frequency_vector >= binst[i])] = i
+        @.. binnum[(frequency_vector <= bin_stops[i]) & (frequency_vector >= bin_starts[i])] = i
     end
 
-    return binnum, Fs, nfft, frequency_vector
+    return binnum, Fs, nfft, frequency_vector, bin_starts, bin_stops
 end
 
 @doc """
     empty_spectrum(s::BS) where {BS<:BinnedStimgen}
 
-Generate an `nfft x 1` vector of Ints, where all values are -100. 
+Generate an `nfft x 1` vector of Ints, where all values are $unfilled_db. 
 """
-empty_spectrum(s::BS) where {BS<:BinnedStimgen} = -100 * ones(Int(nsamples(s) ÷ 2))
+empty_spectrum(s::BS) where {BS<:BinnedStimgen} = unfilled_db * ones(Int(nsamples(s) ÷ 2))
 
 @doc """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
@@ -444,7 +505,7 @@ function generate_stimulus end
 # UniformPrior
 function generate_stimulus(s::UniformPrior)
     # Define Frequency Bin Indices 1 through self.n_bins
-    binnum, Fs, nfft, frequency_vector = freq_bins(s)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
     spect = empty_spectrum(s)
 
     # sample from uniform distribution to get the number of bins to fill
@@ -466,7 +527,7 @@ end
 
 # GaussianPrior
 function generate_stimulus(s::GaussianPrior)
-    binnum, Fs, nfft, frequency_vector = freq_bins(s)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
     spect = empty_spectrum(s)
 
     # sample from gaussian distribution to get the number of bins to fill
@@ -489,7 +550,7 @@ end
 
 # Bernoulli
 function generate_stimulus(s::Bernoulli)
-    binnum, Fs, nfft, frequency_vector = freq_bins(s)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
     spect = empty_spectrum(s)
 
     # Get binned representation
@@ -507,7 +568,7 @@ end
 
 # Brimijoin
 function generate_stimulus(s::Brimijoin)
-    binnum, Fs, nfft, frequency_vector = freq_bins(s)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
     spect = empty_spectrum(s)
 
     # Get binned representation by sampling with replacement
@@ -515,6 +576,41 @@ function generate_stimulus(s::Brimijoin)
 
     # Set spectrum ranges corresponding to bin levels.
     [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# BrimijoinGaussianSmoothed
+function generate_stimulus(s::BrimijoinGaussianSmoothed)
+    _, Fs, nfft, frequency_vector, bin_starts, bin_stops = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    # Get binned representation by sampling with replacement
+    binned_repr = sample(range(s.amp_min, s.amp_max, s.amp_step), s.n_bins)
+
+    # μ: the center of the bins
+    μ = (bin_starts .+ bin_stops) ./ 2
+
+    # σ: half the width of the bins
+    σ = (bin_stops .- bin_starts) ./ 2
+
+    # Create distributions
+    d = Distributions.Normal.(μ, σ)
+    
+    for i in 1:s.n_bins
+        # Create a normal distribution with the correct number of points
+        normal = Distributions.pdf.(d[i], frequency_vector)
+        # Rescale
+        normal = binned_repr[i] * normal ./ maximum(normal)
+        # Add to the spectrum
+        spect += normal
+    end
+    
+    spect = (spect.-minimum(spect))./(maximum(spect).-minimum(spect))
+    spect = -unfilled_db.*(spect .- 1)
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)

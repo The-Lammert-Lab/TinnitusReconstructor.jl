@@ -10,13 +10,13 @@ using DSP
 using Memoize
 using FastBroadcast
 import Distributions # Import to avoid name conflicts. 
-# Could switch to using: truncated, Normal, DiscreteUniform
+# Could switch to using: truncated, Normal, DiscreteUniform, pdf
 
 include("funcs.jl")
 include("StimGens.jl")
 include("ml.jl")
 
-export UniformPrior
+export UniformPrior, GaussianPrior, BrimijoinGaussianSmoothed, Brimijoin, Bernoulli
 export present_stimulus
 export play_scaled_audio
 export generate_stimuli_matrix
