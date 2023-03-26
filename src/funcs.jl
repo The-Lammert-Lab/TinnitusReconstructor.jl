@@ -133,42 +133,43 @@ end
 
 cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 
+# """
+#     subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
+#     subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
+#     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
+#     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
+
+# Idealized model of a subject performing the task.
+
+# Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
+# If `target_signal` is a matrix, it must be one dimensional because that method simply applies `vec(target_signal)`.
+# Return an `n_trials x 1` or `size(stimuli, 1) x 1` vector of `-1` for "no" and `1` for "yes".
+# """
+# function subject_selection_process end
+
+@doc """
+    subject_selection_process(stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}) where {T<:Real}
+
+Perform the synthetic subject decision process, given a matrix of precomputed stimuli `stimuli_matrix`
+and a `target_signal`.
+The `stimuli_matrix` is of size `m x n` where `m` is the number of trials and `n` is the number of samples in the signal.
+The `target_signal` is a flat vector of size `n` or an `n x 1` matrix.
+Return the `n`-dimensional response vector `y` as well as the `stimuli_matrix`
+as well as `nothing` for the binned representation.
 """
-    subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
-    subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
-    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
-    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
-
-Idealized model of a subject performing the task.
-
-Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
-If `target_signal` is a matrix, it must be one dimensional because that method simply applies `vec(target_signal)`.
-Return an `n_trials x 1` or `size(stimuli, 1) x 1` vector of `-1` for "no" and `1` for "yes".
-"""
-function subject_selection_process end
-
 function subject_selection_process(
-    stimuli::AbstractArray{T}, target_signal::AbstractVector{T}
-) where {T<:Real}
-    @assert(
-        !isempty(stimuli),
-        "Stimuli must be explicitly passed or generated via
-`subject_selection_process(s::SG, target_signal::AbstractVector{T}) where {SG<:Stimgen, T<:Real}`"
-    )
-
-    # Ideal selection
-    e = stimuli * target_signal
+    stimuli_matrix::AbstractVecOrMat, target_signal::AbstractVector
+)
+    e = stimuli_matrix'target_signal
     y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
-
-    return y, stimuli
+    return y, stimuli_matrix, nothing
 end
 
-# Convert target_signal to a Vector if passed as an Array.
-function subject_selection_process(
-    stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}
-) where {T<:Real}
-    @assert size(target_signal, 2) == 1 "Target signal must be a Vector or single-column Matrix."
+@doc """
+    subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
+"""
+function subject_selection_process(stimuli::AbstractArray, target_signal::AbstractMatrix)
     return subject_selection_process(stimuli, vec(target_signal))
 end
 
@@ -223,76 +224,46 @@ function wav2spect(audio_file::String; duration=0.5)
     return mean(abs.(S); dims=2)
 end
 
-"""
-    mmd(x, y, σ=1)
-
-Compute the maximum mean discrepancy (MMD)
-between `x` and `y` using a Gaussian kernel.
-
-# Examples
-TODO
-"""
-function mmd(x, y, σ=1)
-    M = length(x)
-    N = length(y)
-
-    mmd = 0
-
-    running_total = 0
-    for i in 1:M, j in 1:M
-        running_total += gaussian_kernel(x[i], x[j])
-    end
-    mmd += (running_total / M^2)
-
-    running_total = 0
-    for i in 1:M, j in 1:N
-        running_total += gaussian_kernel(x[i], y[j])
-    end
-    mmd -= (2 / (M * N) * running_total)
-
-    running_total = 0
-    for i in 1:N, j in 1:N
-        running_total += gaussian_kernel(y[i], y[j])
-    end
-    mmd += (running_total / N^2)
-
-    return mmd
-end
-
 @doc raw"""
-    gaussian_kernel(x, y; σ=1)
+    dB(x)
 
-Compute the gaussian kernel for `x` and `y`.
-This is the function
+Convert from amplitude-scale to decibel-scale via
 
-``k_\sigma : \mathbb{R}^{2m} \times \mathbb{R}^{2m} \rightarrow \mathbb{R}, (x, y) \mapsto k_\sigma (x, y) = \exp \left ( - \frac{1}{2\sigma^2} ||x-y||^2 \right )`` 
+``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
 
 # Examples
 ```jldoctest
-julia> TinnitusReconstructor.gaussian_kernel(1, 1)
-1.0
+
+julia> TinnitusReconstructor.dB.([1, 2, 100])
+3-element Vector{Float64}:
+  0.0
+  3.010299956639812
+ 20.0
+````
+
+"""
+dB(x) = oftype(x / 1, 10) * log10(x)
+
+@doc raw"""
+    invdB(x)
+
+Convert from decibel-scale to amplitude-scale via
+
+``\mathrm{invdB}(x) = 10^{x/10}``
+
+# Examples
+```jldoctest
+julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
+5-element Vector{Float64}:
+ 1.0e-10
+ 1.0
+ 1.2589254117941673
+ 1.5848931924611136
+ 1.0e10
 ```
+
+# See also
+* [`dB`](@ref)
+* [`db⁻¹`](@ref)
 """
-function gaussian_kernel(x, y; σ=1)
-    return @. exp(-1 / (2 * σ^2) * abs(x - y)^2)
-end
-
-@doc raw"""
-    phase_to_mm(Φ)
-
-Convert a matrix of phases `Φ` to a measurement matrix via
-``\frac{1}{\sqrt{m}} \exp(i \Phi)``.
-"""
-phase_to_mm(Φ) = 1 / sqrt(size(Φ, 1)) * cis(Φ)
-
-@doc raw"""
-    stk(z)
-
-Stack real and imaginary parts of a complex vector `z`
-in a real vector `stk(z)`:
-
-``\mathrm{stk} : \mathbb{C}^m \rightarrow \mathbb{R}^{2m}, z \mapsto \mathrm{stk}(z) = \left[\mathcal{R}(z)^{\mathrm{T}}, \mathcal{I}(z)^{\mathrm{T}} \right]^{\mathrm{T}}``
-"""
-function stk(z)
-    return vcat(vec(real(z)'), vec(imag(z)'))
-end
+invdB(x) = oftype(x / 1, 10)^(x / oftype(x / 1, 10))

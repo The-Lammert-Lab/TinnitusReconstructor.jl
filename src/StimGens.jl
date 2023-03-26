@@ -101,6 +101,13 @@ ERROR: InexactError: Int64(30869.999999999996)
 nsamples(s::SG) where {SG<:Stimgen} = convert(Int, fs(s) * s.duration)
 
 # Universal functions
+@doc """
+    subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen,T<:Real,I<:Integer}
+
+Perform the synthetic subject decision process,
+generating the stimuli on-the-fly using the stimulus
+generation method `s`.
+"""
 function subject_selection_process(
     s::SG, target_signal::AbstractVector{T}, n_trials::I
 ) where {SG<:Stimgen,T<:Real,I<:Integer}
@@ -112,10 +119,12 @@ function subject_selection_process(
 end
 
 # Convert target_signal to Vector if passed as an Array.
+@doc """
+    subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen,T<:Real,I<:Integer}
+"""
 function subject_selection_process(
     s::SG, target_signal::AbstractMatrix{T}, n_trials::I
 ) where {SG<:Stimgen,T<:Real,I<:Integer}
-    @assert size(target_signal, 2) == 1 "Target signal must be a Vector or single-column Matrix."
     return subject_selection_process(s, vec(target_signal), n_trials)
 end
 
@@ -225,11 +234,11 @@ Convert a spectral representation into a binned representation.
 Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in each frequency bin,
     where `n_trials` = size(binned_repr, 2).
 @doc """
-function spect2binnedrepr(s::BS, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
+function spect2binnedrepr(s::BS, spect::AbstractVecOrMat{T}) where {BS<:BinnedStimgen,T}
     binned_repr = zeros(s.n_bins, size(spect, 2))
     B, = freq_bins(s)
 
-    @assert length(spect) == length(B)
+    @assert size(spect, 1) == length(B)
 
     for bin_num in 1:(s.n_bins)
         a = spect[B .== bin_num, :]
