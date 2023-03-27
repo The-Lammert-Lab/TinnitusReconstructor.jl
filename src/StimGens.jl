@@ -544,6 +544,60 @@ function UniformNoiseNoBins(;
     return UniformNoiseNoBins(min_freq, max_freq, duration, Fs)
 end
 
+#####################################################
+
+struct GaussianNoiseNoBins <: Stimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    amplitude_mean::Real
+    amplitude_var::Real
+
+    # Inner constructor to validate inputs
+    function GaussianNoiseNoBins(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        amplitude_mean::Real,
+        amplitude_var::Real,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs]) "Only amplitude mean can be less than 0."
+        @assert amplitude_var >= 0 "`amplitude_var` cannot be less than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
+        return new(min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var)
+    end
+end
+
+"""
+    GaussianNoiseNoBins(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each tonotopic bin is filled
+    with amplitude chosen from a Gaussian distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
+- `amplitude_var::Real = 3`: The variance of the Gaussian. 
+"""
+function GaussianNoiseNoBins(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    amplitude_mean=-10,
+    amplitude_var=3,
+)
+    return GaussianNoiseNoBins(min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var)
+end
+
 #############################
 
 ## Stimgen functions  
@@ -904,6 +958,22 @@ function generate_stimulus(s::UniformNoiseNoBins)
     # generate spectrum completely randomly without bins
     # amplitudes are uniformly-distributed between unfilled_db and 0.
     spect = rand(Distributions.Uniform(unfilled_db, 0), nfft ÷ 2)
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    # Empty output
+    binned_repr = []
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# GaussianNoiseNoBins
+function generate_stimulus(s::GaussianNoiseNoBins)
+    _, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+
+    # generate spectrum completely randomly without bins
+    # amplitudes are uniformly-distributed between unfilled_db and 0.
+    spect = rand(Distributions.Normal(s.amplitude_mean, sqrt(s.amplitude_var)), nfft ÷ 2)
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
