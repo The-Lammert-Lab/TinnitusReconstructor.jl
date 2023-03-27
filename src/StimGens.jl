@@ -16,6 +16,8 @@ Abstract supertype for all binned stimulus generation.
 """
 abstract type BinnedStimgen <: Stimgen end
 
+#####################################################
+
 struct UniformPrior <: BinnedStimgen
     min_freq::Real
     max_freq::Real
@@ -72,6 +74,8 @@ function UniformPrior(;
     return UniformPrior(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
 end
 
+#####################################################
+
 struct GaussianPrior <: BinnedStimgen
     min_freq::Real
     max_freq::Real
@@ -126,6 +130,8 @@ function GaussianPrior(;
     return GaussianPrior(min_freq, max_freq, duration, Fs, n_bins, n_bins_filled_mean, n_bins_filled_var)
 end
 
+#####################################################
+
 struct Bernoulli <: BinnedStimgen
     min_freq::Real
     max_freq::Real
@@ -176,6 +182,8 @@ function Bernoulli(;
 )
     return Bernoulli(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
 end
+
+#####################################################
 
 struct Brimijoin <: BinnedStimgen
     min_freq::Real
@@ -236,6 +244,8 @@ function Brimijoin(;
 )
     return Brimijoin(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
 end
+
+#####################################################
 
 struct BrimijoinGaussianSmoothed <: BinnedStimgen
     min_freq::Real
@@ -298,6 +308,62 @@ function BrimijoinGaussianSmoothed(;
     return BrimijoinGaussianSmoothed(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
 end
 
+#####################################################
+
+struct GaussianNoise <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    amplitude_mean::Real
+    amplitude_var::Real
+
+    # Inner constructor to validate inputs
+    function GaussianNoise(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        amplitude_mean::Real,
+        amplitude_var::Real,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude mean can be less than 0."
+        @assert amplitude_var >= 0 "`amplitude_var` cannot be less than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        return new(min_freq, max_freq, duration, Fs, n_bins, amplitude_mean, amplitude_var)
+    end
+end
+
+"""
+    GaussianNoise(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each tonotopic bin is filled
+    with amplitude chosen from a Gaussian distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
+- `amplitude_var::Real = 3`: The variance of the Gaussian. 
+"""
+function GaussianNoise(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    amplitude_mean=-10,
+    amplitude_var=3,
+)
+    return GaussianNoise(min_freq, max_freq, duration, Fs, n_bins, amplitude_mean, amplitude_var)
+end
 
 #############################
 
@@ -611,6 +677,23 @@ function generate_stimulus(s::BrimijoinGaussianSmoothed)
     
     spect = (spect.-minimum(spect))./(maximum(spect).-minimum(spect))
     spect = -unfilled_db.*(spect .- 1)
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# GaussianNoise
+function generate_stimulus(s::GaussianNoise)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    # Get binned representation from random values of Gaussian distribution
+    binned_repr = rand(Distributions.Normal(s.amplitude_mean, sqrt(s.amplitude_var)), s.n_bins)
+
+    # Set spectrum ranges corresponding to bin levels.
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
