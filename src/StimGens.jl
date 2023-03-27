@@ -365,6 +365,54 @@ function GaussianNoise(;
     return GaussianNoise(min_freq, max_freq, duration, Fs, n_bins, amplitude_mean, amplitude_var)
 end
 
+#####################################################
+
+struct UniformNoise <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+
+    # Inner constructor to validate inputs
+    function UniformNoise(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "All arguments must be greater than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        return new(min_freq, max_freq, duration, Fs, n_bins)
+    end
+end
+
+"""
+    UniformNoise(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each tonotopic bin is filled
+    with amplitude chosen from a Uniform distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
+function UniformNoise(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+)
+    return UniformNoise(min_freq, max_freq, duration, Fs, n_bins)
+end
+
 #############################
 
 ## Stimgen functions  
@@ -691,6 +739,23 @@ function generate_stimulus(s::GaussianNoise)
 
     # Get binned representation from random values of Gaussian distribution
     binned_repr = rand(Distributions.Normal(s.amplitude_mean, sqrt(s.amplitude_var)), s.n_bins)
+
+    # Set spectrum ranges corresponding to bin levels.
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# UniformNoise
+function generate_stimulus(s::UniformNoise)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    # Get binned representation from random values of Uniform distribution
+    binned_repr = unfilled_db * rand(Distributions.Uniform(), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
     [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
