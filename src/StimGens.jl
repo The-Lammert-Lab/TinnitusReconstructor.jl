@@ -499,6 +499,51 @@ function UniformPriorWeightedSampling(;
     return UniformPriorWeightedSampling(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_)
 end
 
+#####################################################
+
+struct UniformNoiseNoBins <: Stimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+
+    # Inner constructor to validate inputs
+    function UniformNoiseNoBins(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+    )    
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs]) "All arguments must be greater than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
+        return new(min_freq, max_freq, duration, Fs)
+    end
+end
+
+"""
+    UniformNoiseNoBins(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each frequency is chosen from 
+    a uniform distribution on [$unfilled_db, 0] dB.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+"""
+function UniformNoiseNoBins(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+)
+    return UniformNoiseNoBins(min_freq, max_freq, duration, Fs)
+end
+
 #############################
 
 ## Stimgen functions  
@@ -841,7 +886,7 @@ function generate_stimulus(s::UniformNoise)
     spect = empty_spectrum(s)
 
     # Get binned representation from random values of Uniform distribution
-    binned_repr = unfilled_db * rand(Distributions.Uniform(), s.n_bins)
+    binned_repr = rand(Distributions.Uniform(unfilled_db, 0), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
     [spect[binnum .== i] .= binned_repr[i] for i in 1:s.n_bins]
@@ -852,14 +897,30 @@ function generate_stimulus(s::UniformNoise)
     return stim, Fs, spect, binned_repr, frequency_vector
 end
 
+# UniformNoiseNoBins
+function generate_stimulus(s::UniformNoiseNoBins)
+    _, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+
+    # generate spectrum completely randomly without bins
+    # amplitudes are uniformly-distributed between unfilled_db and 0.
+    spect = rand(Distributions.Uniform(unfilled_db, 0), nfft ÷ 2)
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    # Empty output
+    binned_repr = []
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
 # UniformPriorWeightedSampling
 function generate_stimulus(s::UniformPriorWeightedSampling)
     binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
     spect = empty_spectrum(s)
 
-    # % Generate Random Freq Spec in dB Acccording to Frequency Bin Index
+    # Generate Random Freq Spec in dB Acccording to Frequency Bin Index
     
-    # % sample from uniform distribution to get the number of bins to fill
+    # sample from uniform distribution to get the number of bins to fill
     n_bins_to_fill = rand(Distributions.DiscreteUniform(s.min_bins, s.max_bins))
 
     # sample from a weighted distribution without replacement
