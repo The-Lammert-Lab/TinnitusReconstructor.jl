@@ -16,7 +16,11 @@ include("funcs.jl")
 include("StimGens.jl")
 include("ml.jl")
 
-export UniformPrior, GaussianPrior, BrimijoinGaussianSmoothed, Brimijoin, Bernoulli
+export UniformPrior, GaussianPrior
+export BrimijoinGaussianSmoothed, Brimijoin
+export Bernoulli, BrimijoinGaussianSmoothed
+export GaussianNoise, UniformNoise
+export UniformPriorWeightedSampling
 export present_stimulus
 export play_scaled_audio
 export generate_stimuli_matrix

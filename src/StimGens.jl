@@ -420,6 +420,85 @@ function UniformNoise(;
     return UniformNoise(min_freq, max_freq, duration, Fs, n_bins)
 end
 
+#####################################################
+
+struct UniformPriorWeightedSampling <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    min_bins::Int
+    max_bins::Int
+    alpha_::Real
+    bin_probs::Vector{Real}
+
+    # Inner constructor to validate inputs and create bin_probs
+    function UniformPriorWeightedSampling(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        min_bins::Int,
+        max_bins::Int,
+        alpha_::Real,
+    )    
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins min_bins max_bins alpha_]) "All arguments must be greater than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert min_bins <= max_bins "`min_bins` cannot be greater than `max_bins`. `min_bins` = $min_bins, `max_bins` = $max_bins."
+        @assert max_bins <= n_bins "`max_bins` cannot be greater than `n_bins`. `max_bins` = $max_bins, `n_bins` = $n_bins."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
+
+        binnums, = freq_bins(new(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_))
+
+        # Compute the bin occupancy, which is a `n_bins x 1` vector
+        # which counts the number of unique frequencies in each bin.
+        # This bin occupancy quantity is not related to which bins
+        # are "filled".
+        bin_occupancy = zeros(n_bins)
+        [bin_occupancy[i] = sum(binnums .== i) for i in 1:n_bins]
+
+        # Set `bin_probs` equal to the bin occupancy, exponentiated by `alpha_`.
+        bin_occupancy .^= alpha_
+        bin_probs = normalize(bin_occupancy)
+
+        return new(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_, bin_probs)
+    end
+end
+
+"""
+    UniformPriorWeightedSampling(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    in which each tonotopic bin is filled
+    from a uniform distribution on [`min_bins`, `max_bins`]
+    but which bins are filled is determined by a non-uniform distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
+- `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
+- `alpha_::Real = 1`: The tuning parameter that exponentiates the number of unique frequencies in each bin.
+"""
+function UniformPriorWeightedSampling(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    min_bins=10,
+    max_bins=50,
+    alpha_=1,
+)
+    return UniformPriorWeightedSampling(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_)
+end
+
 #############################
 
 ## Stimgen functions  
@@ -769,6 +848,33 @@ function generate_stimulus(s::UniformNoise)
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+# UniformPriorWeightedSampling
+function generate_stimulus(s::UniformPriorWeightedSampling)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    # % Generate Random Freq Spec in dB Acccording to Frequency Bin Index
+    
+    # % sample from uniform distribution to get the number of bins to fill
+    n_bins_to_fill = rand(Distributions.DiscreteUniform(s.min_bins, s.max_bins))
+
+    # sample from a weighted distribution without replacement
+    # to get the bins that should be filled
+    filled_bins = sample(1:(s.n_bins), Weights(s.bin_probs), n_bins_to_fill; replace=false)
+
+    # fill those bins
+    [spect[binnum .== bin] .= 0 for bin in eachindex(filled_bins)]
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
+
+    # get the binned representation
+    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr[filled_bins] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
 end
