@@ -41,6 +41,7 @@ struct UniformPrior <: BinnedStimgen
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert min_bins <= max_bins "`min_bins` cannot be greater than `max_bins`. `min_bins` = $min_bins, `max_bins` = $max_bins."
         @assert max_bins <= n_bins "`max_bins` cannot be greater than `n_bins`. `max_bins` = $max_bins, `n_bins` = $n_bins."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
     end
 end
@@ -97,6 +98,7 @@ struct GaussianPrior <: BinnedStimgen
     )
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins n_bins_filled_mean n_bins_filled_var]) "All arguments must be greater than 0"
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins, n_bins_filled_mean, n_bins_filled_var)
     end
 end
@@ -152,6 +154,7 @@ struct Bernoulli <: BinnedStimgen
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins bin_prob]) "All arguments must be greater than 0"
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert bin_prob <= 1 "`bin_prob` must be less than or equal to 1."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
     end
 end
@@ -210,6 +213,7 @@ struct Brimijoin <: BinnedStimgen
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert amp_min < amp_max "`amp_min` must be less than `amp_max`."
         @assert amp_step > 1 "`amp_step` must be greater than 1."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
     end
 end
@@ -272,6 +276,7 @@ struct BrimijoinGaussianSmoothed <: BinnedStimgen
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert amp_min < amp_max "`amp_min` must be less than `amp_max`."
         @assert amp_step > 1 "`amp_step` must be greater than 1."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
     end
 end
@@ -332,6 +337,7 @@ struct GaussianNoise <: BinnedStimgen
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude mean can be less than 0."
         @assert amplitude_var >= 0 "`amplitude_var` cannot be less than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins, amplitude_mean, amplitude_var)
     end
 end
@@ -381,9 +387,10 @@ struct UniformNoise <: BinnedStimgen
         duration::Real,
         Fs::Real,
         n_bins::Integer,
-    )
+    )    
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "All arguments must be greater than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins)
     end
 end
