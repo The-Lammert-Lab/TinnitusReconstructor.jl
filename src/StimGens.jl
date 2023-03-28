@@ -425,7 +425,7 @@ struct UniformPriorWeightedSampling <: BinnedStimgen
     min_bins::Int
     max_bins::Int
     alpha_::Real
-    bin_probs::Vector{Real}
+    bin_probs::AbstractVecOrMat{<:Real}
 
     # Inner constructor to validate inputs and create bin_probs
     function UniformPriorWeightedSampling(
@@ -497,6 +497,72 @@ function UniformPriorWeightedSampling(;
 )
     return UniformPriorWeightedSampling(
         min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_
+    )
+end
+
+#####################################################
+
+struct PowerDistribution <: BinnedStimgen
+    min_freq::Real
+    max_freq::Real
+    duration::Real
+    Fs::Real
+    n_bins::Int
+    distribution::AbstractVecOrMat{<:Real}
+    distribution_filepath::AbstractString
+
+    # Inner constructor to validate inputs
+    function PowerDistribution(
+        min_freq::Real,
+        max_freq::Real,
+        duration::Real,
+        Fs::Real,
+        n_bins::Integer,
+        distribution_filepath::AbstractString,
+    )
+        @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude arguments can be less than 0."
+        @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
+
+        if isfile(distribution_filepath)
+            distribution = readdlm(distribution_filepath, ',')
+        else
+            distribution = build_distribution(new(min_freq, max_freq, duration, Fs, n_bins))
+        end
+
+        return new(
+            min_freq, max_freq, duration, Fs, n_bins, distribution, distribution_filepath
+        )
+    end
+end
+
+"""
+    PowerDistribution(; kwargs...) <: BinnedStimgen
+
+Constructor for stimulus generation type in which 
+    the frequencies in each bin are sampled 
+    from a power distribution learned
+    from tinnitus examples.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `distribution_filepath::AbstractString=joinpath(@__DIR__, "distribution.csv")`: The filepath to the default power distribution from which stimuli are generated
+"""
+function PowerDistribution(;
+    min_freq=100.0,
+    max_freq=22e3,
+    duration=0.5,
+    Fs=44.1e3,
+    n_bins=100,
+    distribution_filepath=joinpath(@__DIR__, "distribution.csv"),
+)
+    return PowerDistribution(
+        min_freq, max_freq, duration, Fs, n_bins, distribution_filepath
     )
 end
 
@@ -703,6 +769,10 @@ function generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen,I<
     return stimuli_matrix, Fs, spect_matrix, binned_repr_matrix
 end
 
+function get_freq(s::SG) where {SG<:Stimgen}
+    return range(s.min_freq, s.max_freq, nsamples(s) ÷ 2)
+end
+
 #############################
 
 ## BinnedStimgen functions  
@@ -748,7 +818,7 @@ Generate an `nfft x 1` vector of Ints, where all values are $unfilled_db.
 empty_spectrum(s::BS) where {BS<:BinnedStimgen} = unfilled_db * ones(Int(nsamples(s) ÷ 2))
 
 @doc """
-    spect2binnedrepr(s::BinnedStimgen, spect::AbstractArray{T}) where {BS<:BinnedStimgen,T}
+    spect2binnedrepr(s::BinnedStimgen, spect::AbstractVecOrMat{T}) where {BS<:BinnedStimgen,T}
 
 Convert a spectral representation into a binned representation.
  
@@ -787,9 +857,56 @@ function binnedrepr2spect(s::BS, binned_repr::AbstractArray{T}) where {BS<:Binne
     return spect
 end
 
+"""
+    build_distribution(s::PowerDistribution; save_path::AbstractString=@__DIR__)
+
+Builds the default power distribution from ATA tinnitus sample files.
+    Saves the distribution as a vector in dB at save_path.
+"""
+function build_distribution(s::PowerDistribution; save_path::AbstractString=@__DIR__)
+    @assert ispath(save_path) "`save_path` must be a valid path"
+
+    ATA_files = readdir(abspath("ATA"); join=true)
+    freq_vec = get_freq(s)
+
+    audio = load(pop!(ATA_files))
+    Fs_file = convert(Int, samplerate(audio))
+
+    y = float(vec(audio.data))
+    y = (y .- minimum(y)) ./ (maximum(y) - minimum(y))
+    Y = fft(y) / length(y)
+    freq_file = Fs_file / 2 * range(0,1,Fs_file ÷ 2 + 1)
+    pxx = abs.(Y[1:Fs_file ÷ 2 + 1])
+
+    power_spectra = zeros(length(pxx), length(ATA_files) + 1)
+    power_spectra[:, 1] = pow2db.(pxx)
+
+    for (ind, file) in enumerate(eachrow(ATA_files))
+        audio = load(file[1])
+        y = float(vec(audio.data))
+        y = (y .- minimum(y)) ./ (maximum(y) - minimum(y))
+        Y = fft(y) / length(y)
+        pxx = abs.(Y[1:Fs_file ÷ 2 + 1])
+
+        power_spectra[:, ind] = pow2db.(pxx)
+    end
+
+    spect = mean(power_spectra; dims=2)
+
+    # Interpolate (analagous to MATLAB's interp1(freq_file, spect, freq_vec, 'cubic');)
+    distribution = zeros(length(freq_vec))
+    itp = interpolate(vec(spect), BSpline(Cubic(Natural())), OnGrid())
+    intf = scale(itp, (freq_file,))
+    distribution = [intf[xi] for xi in freq_vec]
+
+    writedlm(joinpath(save_path, "distribution.csv"), distribution, ',')
+
+    return distribution
+end
+
 #############################
 
-## generate_stimulus functions  
+## generate_stimulus methods  
 
 #############################
 
@@ -858,7 +975,7 @@ function generate_stimulus(s::Bernoulli)
     binned_repr[rand(s.n_bins) .< s.bin_prob] .= 0
 
     # Set spectrum ranges corresponding to bins to bin level.
-    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -875,7 +992,7 @@ function generate_stimulus(s::Brimijoin)
     binned_repr = sample(range(s.amp_min, s.amp_max, s.amp_step), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
-    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -927,7 +1044,7 @@ function generate_stimulus(s::GaussianNoise)
     binned_repr = rand(Normal(s.amplitude_mean, sqrt(s.amplitude_var)), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
-    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -944,7 +1061,7 @@ function generate_stimulus(s::UniformNoise)
     binned_repr = rand(Uniform(unfilled_db, 0), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
-    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -1007,6 +1124,36 @@ function generate_stimulus(s::UniformPriorWeightedSampling)
     # get the binned representation
     binned_repr = unfilled_db * ones(Int, s.n_bins)
     binned_repr[filled_bins] .= 0
+
+    return stim, Fs, spect, binned_repr, frequency_vector
+end
+
+function generate_stimulus(s::PowerDistribution)
+    binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+    spect = empty_spectrum(s)
+
+    # Get the histogram of the power distribution for binning
+    # Force 16 bins using edges parameter. May be unnecessary.
+    h = normalize(fit(Histogram, vec(s.distribution), range(extrema(s.distribution)..., 16)); mode=:pdf)
+
+    bin_centers = h.edges[1][1] .+ cumsum(diff(h.edges[1])/2)
+    pdf = h.weights .+ (0.01 * mean(h.weights))
+    pdf /= sum(pdf)
+    cdf = cumsum(pdf)
+
+    # Sample power values from the histogram
+    r = rand(s.n_bins)
+    binned_repr = zeros(s.n_bins)
+    for i in eachindex(r)
+        idx = argmin((cdf .- r[i]) .^ 2)
+        binned_repr[i] = bin_centers[idx]
+    end
+
+    # Create the random frequency spectrum
+    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
+
+    # Synthesize Audio
+    stim = synthesize_audio(spect, nfft)
 
     return stim, Fs, spect, binned_repr, frequency_vector
 end
