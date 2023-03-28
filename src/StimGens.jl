@@ -875,8 +875,8 @@ function build_distribution(s::PowerDistribution; save_path::AbstractString=@__D
     y = float(vec(audio.data))
     y = (y .- minimum(y)) ./ (maximum(y) - minimum(y))
     Y = fft(y) / length(y)
-    freq_file = Fs_file / 2 * range(0,1,Fs_file ÷ 2 + 1)
-    pxx = abs.(Y[1:Fs_file ÷ 2 + 1])
+    freq_file = Fs_file / 2 * range(0, 1, Fs_file ÷ 2 + 1)
+    pxx = abs.(Y[1:(Fs_file ÷ 2 + 1)])
 
     power_spectra = zeros(length(pxx), length(ATA_files) + 1)
     power_spectra[:, 1] = pow2db.(pxx)
@@ -886,7 +886,7 @@ function build_distribution(s::PowerDistribution; save_path::AbstractString=@__D
         y = float(vec(audio.data))
         y = (y .- minimum(y)) ./ (maximum(y) - minimum(y))
         Y = fft(y) / length(y)
-        pxx = abs.(Y[1:Fs_file ÷ 2 + 1])
+        pxx = abs.(Y[1:(Fs_file ÷ 2 + 1)])
 
         power_spectra[:, ind] = pow2db.(pxx)
     end
@@ -1128,15 +1128,19 @@ function generate_stimulus(s::UniformPriorWeightedSampling)
     return stim, Fs, spect, binned_repr, frequency_vector
 end
 
+# PowerDistribution
 function generate_stimulus(s::PowerDistribution)
     binnum, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
     spect = empty_spectrum(s)
 
     # Get the histogram of the power distribution for binning
     # Force 16 bins using edges parameter. May be unnecessary.
-    h = normalize(fit(Histogram, vec(s.distribution), range(extrema(s.distribution)..., 16)); mode=:pdf)
+    h = normalize(
+        fit(Histogram, vec(s.distribution), range(extrema(s.distribution)..., 16));
+        mode=:pdf,
+    )
 
-    bin_centers = h.edges[1][1] .+ cumsum(diff(h.edges[1])/2)
+    bin_centers = h.edges[1][1] .+ cumsum(diff(h.edges[1]) / 2)
     pdf = h.weights .+ (0.01 * mean(h.weights))
     pdf /= sum(pdf)
     cdf = cumsum(pdf)
