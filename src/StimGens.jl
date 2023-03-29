@@ -730,7 +730,7 @@ function generate_stimuli_matrix(s::SG, n_trials::I) where {SG<:Stimgen,I<:Integ
 
     # Instantiate stimuli matrix
     stimuli_matrix = zeros(length(stim), n_trials)
-    spect_matrix = zeros(Int, length(spect), n_trials)
+    spect_matrix = zeros(length(spect), n_trials)
     stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:n_trials
@@ -752,12 +752,12 @@ function generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen,I<
     @assert n_trials > 1 "`n_trials` must be greater than 1. To generate one trial, use `generate_stimulus()`."
 
     # Generate first stimulus
-    binned_repr_matrix = zeros(Int, s.n_bins, n_trials)
+    binned_repr_matrix = zeros(s.n_bins, n_trials)
     stim, Fs, spect, binned_repr_matrix[:, 1] = generate_stimulus(s)
 
     # Instantiate stimuli matrix
     stimuli_matrix = zeros(length(stim), n_trials)
-    spect_matrix = zeros(Int, length(spect), n_trials)
+    spect_matrix = zeros(length(spect), n_trials) 
     stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:n_trials
@@ -949,7 +949,7 @@ function generate_stimulus(s::GaussianPrior)
 
     # sample from gaussian distribution to get the number of bins to fill
     d = truncated(Normal(s.n_bins_filled_mean, sqrt(s.n_bins_filled_var)), 1, s.n_bins)
-    n_bins_to_fill = round(rand(d))
+    n_bins_to_fill = round(Int, rand(d))
     bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace=false)
 
     # Set spectrum ranges corresponding to bins to 0dB.
@@ -975,7 +975,7 @@ function generate_stimulus(s::Bernoulli)
     binned_repr[rand(s.n_bins) .< s.bin_prob] .= 0
 
     # Set spectrum ranges corresponding to bins to bin level.
-    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -992,7 +992,7 @@ function generate_stimulus(s::Brimijoin)
     binned_repr = sample(range(s.amp_min, s.amp_max, s.amp_step), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
-    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -1001,6 +1001,7 @@ function generate_stimulus(s::Brimijoin)
 end
 
 # BrimijoinGaussianSmoothed
+# TODO: Optimize
 function generate_stimulus(s::BrimijoinGaussianSmoothed)
     _, Fs, nfft, frequency_vector, bin_starts, bin_stops = freq_bins(s)
     spect = empty_spectrum(s)
@@ -1044,7 +1045,7 @@ function generate_stimulus(s::GaussianNoise)
     binned_repr = rand(Normal(s.amplitude_mean, sqrt(s.amplitude_var)), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
-    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -1061,7 +1062,7 @@ function generate_stimulus(s::UniformNoise)
     binned_repr = rand(Uniform(unfilled_db, 0), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
-    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -1071,7 +1072,8 @@ end
 
 # UniformNoiseNoBins
 function generate_stimulus(s::UniformNoiseNoBins)
-    _, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+    Fs = fs(s)
+    nfft = nsamples(s)
 
     # generate spectrum completely randomly without bins
     # amplitudes are uniformly-distributed between unfilled_db and 0.
@@ -1082,12 +1084,14 @@ function generate_stimulus(s::UniformNoiseNoBins)
 
     # Empty output
     binned_repr = []
+    frequency_vector = []
     return stim, Fs, spect, binned_repr, frequency_vector
 end
 
 # GaussianNoiseNoBins
 function generate_stimulus(s::GaussianNoiseNoBins)
-    _, Fs, nfft, frequency_vector, _, _ = freq_bins(s)
+    Fs = fs(s)
+    nfft = nsamples(s)
 
     # generate spectrum completely randomly without bins
     # amplitudes are uniformly-distributed between unfilled_db and 0.
@@ -1098,6 +1102,7 @@ function generate_stimulus(s::GaussianNoiseNoBins)
 
     # Empty output
     binned_repr = []
+    frequency_vector = []
     return stim, Fs, spect, binned_repr, frequency_vector
 end
 
@@ -1154,7 +1159,7 @@ function generate_stimulus(s::PowerDistribution)
     end
 
     # Create the random frequency spectrum
-    [spect[binnum .== i] .= binned_repr[i] for i in eachindex(s.n_bins)]
+    [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
