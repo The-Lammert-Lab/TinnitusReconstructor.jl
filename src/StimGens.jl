@@ -757,7 +757,7 @@ function generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen,I<
 
     # Instantiate stimuli matrix
     stimuli_matrix = zeros(length(stim), n_trials)
-    spect_matrix = zeros(length(spect), n_trials) 
+    spect_matrix = zeros(length(spect), n_trials)
     stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:n_trials
