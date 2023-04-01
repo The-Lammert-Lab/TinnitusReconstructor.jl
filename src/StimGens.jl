@@ -18,31 +18,25 @@ abstract type BinnedStimgen <: Stimgen end
 
 #####################################################
 
-struct UniformPrior <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    min_bins::Int
-    max_bins::Int
+struct UniformPrior{T<:Real,I<:Integer} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    min_bins::I
+    max_bins::I
+    n_bins::I
 
     # Inner constructor to validate inputs
-    function UniformPrior(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        min_bins::Integer,
-        max_bins::Integer,
-    )
+    function UniformPrior{T,I}(
+        min_freq::T, max_freq::T, duration::T, Fs::T, min_bins::I, max_bins::I, n_bins::I
+    ) where {T<:Real,I<:Integer}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins min_bins max_bins]) "All arguments must be greater than 0"
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert min_bins <= max_bins "`min_bins` cannot be greater than `max_bins`. `min_bins` = $min_bins, `max_bins` = $max_bins."
         @assert max_bins <= n_bins "`max_bins` cannot be greater than `n_bins`. `max_bins` = $max_bins, `n_bins` = $n_bins."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
-        return new(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
+        return new(min_freq, max_freq, duration, Fs, min_bins, max_bins, n_bins)
     end
 end
 
@@ -59,43 +53,45 @@ Constructor for stimulus generation type in which
 - `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 - `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
 - `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 function UniformPrior(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    n_bins=100,
-    min_bins=10,
-    max_bins=50,
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    min_bins::Integer=10,
+    max_bins::Integer=50,
+    n_bins::Integer=100,
 )
-    return UniformPrior(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins)
+    reals = promote(min_freq, max_freq, duration, Fs)
+    ints = promote(min_bins, max_bins, n_bins)
+    return UniformPrior{eltype(reals),eltype(ints)}(reals..., ints...)
 end
 
 #####################################################
 
-struct GaussianPrior <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    n_bins_filled_mean::Int
-    n_bins_filled_var::Real
+struct GaussianPrior{T<:Real,I<:Integer} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    n_bins_filled_var::T
+    n_bins_filled_mean::I
+    n_bins::I
 
     # Inner constructor to validate inputs
-    function GaussianPrior(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        n_bins_filled_mean::Integer,
-        n_bins_filled_var::Real,
-    )
+    function GaussianPrior{T,I}(
+        min_freq::T,
+        max_freq::T,
+        duration::T,
+        Fs::T,
+        n_bins_filled_var::T,
+        n_bins_filled_mean::I,
+        n_bins::I,
+    ) where {T<:Real,I<:Integer}
         @assert all(
             x -> x > 0,
             [min_freq max_freq duration Fs n_bins n_bins_filled_mean n_bins_filled_var],
@@ -103,7 +99,7 @@ struct GaussianPrior <: BinnedStimgen
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(
-            min_freq, max_freq, duration, Fs, n_bins, n_bins_filled_mean, n_bins_filled_var
+            min_freq, max_freq, duration, Fs, n_bins_filled_var, n_bins_filled_mean, n_bins
         )
     end
 end
@@ -121,48 +117,43 @@ Constructor for stimulus generation type in which
 - `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-- `n_bins_filled_mean::Integer = 20`: The mean number of bins that may be filled on any stimuli.
 - `n_bins_filled_var::Real = 1`: The variance of number of bins that may be filled on any stimuli.
+- `n_bins_filled_mean::Integer = 20`: The mean number of bins that may be filled on any stimuli.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 function GaussianPrior(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    n_bins=100,
-    n_bins_filled_mean=20,
-    n_bins_filled_var=1,
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    n_bins_filled_var::Real=1,
+    n_bins_filled_mean::Integer=20,
+    n_bins::Integer=100,
 )
-    return GaussianPrior(
-        min_freq, max_freq, duration, Fs, n_bins, n_bins_filled_mean, n_bins_filled_var
-    )
+    reals = promote(min_freq, max_freq, duration, Fs, n_bins_filled_var)
+    ints = promote(n_bins_filled_mean, n_bins)
+    return GaussianPrior{eltype(reals),eltype(ints)}(reals..., ints...)
 end
 
 #####################################################
 
-struct Bernoulli <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    bin_prob::Real
+struct Bernoulli{T<:Real,I<:Integer} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    bin_prob::T
+    n_bins::I
 
     # Inner constructor to validate inputs
-    function Bernoulli(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        bin_prob::Real,
-    )
+    function Bernoulli{T,I}(
+        min_freq::T, max_freq::T, duration::T, Fs::T, bin_prob::T, n_bins::I
+    ) where {T<:Real,I<:Integer}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins bin_prob]) "All arguments must be greater than 0"
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert bin_prob <= 1 "`bin_prob` must be less than or equal to 1."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
-        return new(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
+        return new(min_freq, max_freq, duration, Fs, bin_prob, n_bins)
     end
 end
 
@@ -179,44 +170,50 @@ Constructor for stimulus generation type in which
 - `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 - `bin_prob::Real=0.3`: The probability of a bin being filled.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 function Bernoulli(;
-    min_freq=100.0, max_freq=22e3, duration=0.5, Fs=44.1e3, n_bins=100, bin_prob=0.3
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    bin_prob::Real=0.3,
+    n_bins::Integer=100,
 )
-    return Bernoulli(min_freq, max_freq, duration, Fs, n_bins, bin_prob)
+    reals = promote(min_freq, max_freq, duration, Fs, bin_prob)
+    return Bernoulli{eltype(reals),typeof(n_bins)}(reals..., n_bins)
 end
 
 #####################################################
 
-struct Brimijoin <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    amp_min::Real
-    amp_max::Real
-    amp_step::Int
+struct Brimijoin{T<:Real,I<:Integer} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    amp_min::T
+    amp_max::T
+    amp_step::I
+    n_bins::I
 
     # Inner constructor to validate inputs
-    function Brimijoin(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        amp_min::Real,
-        amp_max::Real,
-        amp_step::Integer,
-    )
+    function Brimijoin{T,I}(
+        min_freq::T,
+        max_freq::T,
+        duration::T,
+        Fs::T,
+        amp_min::T,
+        amp_max::T,
+        amp_step::I,
+        n_bins::I,
+    ) where {T<:Real,I<:Integer}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude arguments can be less than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert amp_min < amp_max "`amp_min` must be less than `amp_max`."
         @assert amp_step > 1 "`amp_step` must be greater than 1."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
-        return new(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
+        return new(min_freq, max_freq, duration, Fs, amp_min, amp_max, amp_step, n_bins)
     end
 end
 
@@ -233,53 +230,55 @@ Constructor for stimulus generation type in which
 - `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 - `amp_min::Real = -20`: The lowest dB value a bin can have.
 - `amp_max::Real = 0`: The highest dB value a bin can have.
 - `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 function Brimijoin(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    n_bins=100,
-    amp_min=-20,
-    amp_max=0,
-    amp_step=6,
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    amp_min::Real=-20,
+    amp_max::Real=0,
+    amp_step::Integer=6,
+    n_bins::Integer=100,
 )
-    return Brimijoin(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
+    reals = promote(min_freq, max_freq, duration, Fs, amp_min, amp_max)
+    ints = promote(amp_step, n_bins)
+    return Brimijoin{eltype(reals),eltype(ints)}(reals..., ints...)
 end
 
 #####################################################
 
-struct BrimijoinGaussianSmoothed <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    amp_min::Real
-    amp_max::Real
-    amp_step::Int
+struct BrimijoinGaussianSmoothed{T<:Real,I<:Integer} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    amp_min::T
+    amp_max::T
+    amp_step::I
+    n_bins::I
 
     # Inner constructor to validate inputs
-    function BrimijoinGaussianSmoothed(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        amp_min::Real,
-        amp_max::Real,
-        amp_step::Integer,
-    )
+    function BrimijoinGaussianSmoothed{T,I}(
+        min_freq::T,
+        max_freq::T,
+        duration::T,
+        Fs::T,
+        amp_min::T,
+        amp_max::T,
+        amp_step::I,
+        n_bins::I,
+    ) where {T<:Real,I<:Integer}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude arguments can be less than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert amp_min < amp_max "`amp_min` must be less than `amp_max`."
         @assert amp_step > 1 "`amp_step` must be greater than 1."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
-        return new(min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step)
+        return new(min_freq, max_freq, duration, Fs, amp_min, amp_max, amp_step, n_bins)
     end
 end
 
@@ -297,52 +296,52 @@ Constructor for stimulus generation type in which
 - `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 - `amp_min::Real = -20`: The lowest dB value a bin can have.
 - `amp_max::Real = 0`: The highest dB value a bin can have.
 - `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 function BrimijoinGaussianSmoothed(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    n_bins=100,
-    amp_min=-20,
-    amp_max=0,
-    amp_step=6,
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    amp_min::Real=-20,
+    amp_max::Real=0,
+    amp_step::Integer=6,
+    n_bins::Integer=100,
 )
-    return BrimijoinGaussianSmoothed(
-        min_freq, max_freq, duration, Fs, n_bins, amp_min, amp_max, amp_step
-    )
+    reals = promote(min_freq, max_freq, duration, Fs, amp_min, amp_max)
+    ints = promote(amp_step, n_bins)
+    return BrimijoinGaussianSmoothed{eltype(reals),eltype(ints)}(reals..., ints...)
 end
 
 #####################################################
 
-struct GaussianNoise <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    amplitude_mean::Real
-    amplitude_var::Real
+struct GaussianNoise{T<:Real,I<:Integer} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    amplitude_mean::T
+    amplitude_var::T
+    n_bins::I
 
     # Inner constructor to validate inputs
-    function GaussianNoise(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        amplitude_mean::Real,
-        amplitude_var::Real,
-    )
+    function GaussianNoise{T,I}(
+        min_freq::T,
+        max_freq::T,
+        duration::T,
+        Fs::T,
+        amplitude_mean::T,
+        amplitude_var::T,
+        n_bins::I,
+    ) where {T<:Real,I<:Integer}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude mean can be less than 0."
         @assert amplitude_var >= 0 "`amplitude_var` cannot be less than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
-        return new(min_freq, max_freq, duration, Fs, n_bins, amplitude_mean, amplitude_var)
+        return new(min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var, n_bins)
     end
 end
 
@@ -363,32 +362,31 @@ Constructor for stimulus generation type in which
 - `amplitude_var::Real = 3`: The variance of the Gaussian. 
 """
 function GaussianNoise(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    n_bins=100,
-    amplitude_mean=-10,
-    amplitude_var=3,
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    amplitude_mean::Real=-10,
+    amplitude_var::Real=3,
+    n_bins::Integer=100,
 )
-    return GaussianNoise(
-        min_freq, max_freq, duration, Fs, n_bins, amplitude_mean, amplitude_var
-    )
+    reals = promote(min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var)
+    return GaussianNoise{eltype(reals),typeof(n_bins)}(reals..., n_bins)
 end
 
 #####################################################
 
-struct UniformNoise <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
+struct UniformNoise{T<:Real,I<:Integer} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    n_bins::I
 
     # Inner constructor to validate inputs
-    function UniformNoise(
-        min_freq::Real, max_freq::Real, duration::Real, Fs::Real, n_bins::Integer
-    )
+    function UniformNoise{T,I}(
+        min_freq::T, max_freq::T, duration::T, Fs::T, n_bins::I
+    ) where {T<:Real,I<:Integer}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "All arguments must be greater than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
@@ -410,34 +408,42 @@ Constructor for stimulus generation type in which
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
 - `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
-function UniformNoise(; min_freq=100.0, max_freq=22e3, duration=0.5, Fs=44.1e3, n_bins=100)
-    return UniformNoise(min_freq, max_freq, duration, Fs, n_bins)
+function UniformNoise(;
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    n_bins::Integer=100,
+)
+    reals = promote(min_freq, max_freq, duration, Fs)
+    return UniformNoise{eltype(reals),typeof(n_bins)}(reals..., n_bins)
 end
 
 #####################################################
 
-struct UniformPriorWeightedSampling <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    min_bins::Int
-    max_bins::Int
-    alpha_::Real
-    bin_probs::AbstractVecOrMat{<:Real}
+struct UniformPriorWeightedSampling{T<:Real,I<:Integer,Q<:AbstractVecOrMat{<:Real}} <:
+       BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    alpha_::T
+    min_bins::I
+    max_bins::I
+    n_bins::I
+    bin_probs::Q
 
     # Inner constructor to validate inputs and create bin_probs
-    function UniformPriorWeightedSampling(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        min_bins::Int,
-        max_bins::Int,
-        alpha_::Real,
-    )
+    function UniformPriorWeightedSampling{T,I,Q}(
+        min_freq::T,
+        max_freq::T,
+        duration::T,
+        Fs::T,
+        alpha_::T,
+        min_bins::I,
+        max_bins::I,
+        n_bins::I,
+    ) where {T<:Real,I<:Integer,Q<:AbstractVecOrMat{<:Real}}
         @assert all(
             x -> x > 0, [min_freq max_freq duration Fs n_bins min_bins max_bins alpha_]
         ) "All arguments must be greater than 0."
@@ -447,7 +453,7 @@ struct UniformPriorWeightedSampling <: BinnedStimgen
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
 
         binnums, = freq_bins(
-            new(min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_)
+            new(min_freq, max_freq, duration, Fs, alpha_, min_bins, max_bins, n_bins)
         )
 
         # Compute the bin occupancy, which is a `n_bins x 1` vector
@@ -461,8 +467,8 @@ struct UniformPriorWeightedSampling <: BinnedStimgen
         bin_occupancy .^= alpha_
         bin_probs = normalize(bin_occupancy)
 
-        return new(
-            min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_, bin_probs
+        return new{T,I,typeof(bin_probs)}(
+            min_freq, max_freq, duration, Fs, alpha_, min_bins, max_bins, n_bins, bin_probs
         )
     end
 end
@@ -480,46 +486,46 @@ Constructor for stimulus generation type in which
 - `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `alpha_::Real = 1`: The tuning parameter that exponentiates the number of unique frequencies in each bin.
 - `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
 - `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
-- `alpha_::Real = 1`: The tuning parameter that exponentiates the number of unique frequencies in each bin.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 function UniformPriorWeightedSampling(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    n_bins=100,
-    min_bins=10,
-    max_bins=50,
-    alpha_=1,
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    alpha_::Real=1,
+    min_bins::Integer=10,
+    max_bins::Integer=50,
+    n_bins::Integer=100,
 )
-    return UniformPriorWeightedSampling(
-        min_freq, max_freq, duration, Fs, n_bins, min_bins, max_bins, alpha_
+    reals = promote(min_freq, max_freq, duration, Fs, alpha_)
+    ints = promote(min_bins, max_bins, n_bins)
+
+    return UniformPriorWeightedSampling{eltype(reals),eltype(ints),Vector{Real}}(
+        reals..., ints...
     )
 end
 
 #####################################################
 
-struct PowerDistribution <: BinnedStimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    n_bins::Int
-    distribution::AbstractVecOrMat{<:Real}
-    distribution_filepath::AbstractString
+struct PowerDistribution{
+    T<:Real,I<:Integer,Q<:AbstractVecOrMat{<:Real},S<:AbstractString
+} <: BinnedStimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    n_bins::I
+    distribution_filepath::S
+    distribution::Q
 
     # Inner constructor to validate inputs
-    function PowerDistribution(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        n_bins::Integer,
-        distribution_filepath::AbstractString,
-    )
+    function PowerDistribution{T,I,Q,S}(
+        min_freq::T, max_freq::T, duration::T, Fs::T, n_bins::I, distribution_filepath::S
+    ) where {T<:Real,I<:Integer,Q<:AbstractVecOrMat{<:Real},S<:AbstractString}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude arguments can be less than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
@@ -530,8 +536,8 @@ struct PowerDistribution <: BinnedStimgen
             distribution = build_distribution(new(min_freq, max_freq, duration, Fs, n_bins))
         end
 
-        return new(
-            min_freq, max_freq, duration, Fs, n_bins, distribution, distribution_filepath
+        return new{T,I,typeof(distribution),S}(
+            min_freq, max_freq, duration, Fs, n_bins, distribution_filepath, distribution
         )
     end
 end
@@ -554,28 +560,33 @@ Constructor for stimulus generation type in which
 - `distribution_filepath::AbstractString=joinpath(@__DIR__, "distribution.csv")`: The filepath to the default power distribution from which stimuli are generated
 """
 function PowerDistribution(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    n_bins=100,
-    distribution_filepath=joinpath(@__DIR__, "distribution.csv"),
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    n_bins::Integer=100,
+    distribution_filepath::AbstractString=joinpath(@__DIR__, "distribution.csv"),
 )
-    return PowerDistribution(
-        min_freq, max_freq, duration, Fs, n_bins, distribution_filepath
+    reals = promote(min_freq, max_freq, duration, Fs)
+    return PowerDistribution{
+        eltype(reals),typeof(n_bins),Vector{Real},typeof(distribution_filepath)
+    }(
+        reals..., n_bins, distribution_filepath
     )
 end
 
 #####################################################
 
-struct UniformNoiseNoBins <: Stimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
+struct UniformNoiseNoBins{T<:Real} <: Stimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
 
     # Inner constructor to validate inputs
-    function UniformNoiseNoBins(min_freq::Real, max_freq::Real, duration::Real, Fs::Real)
+    function UniformNoiseNoBins{T}(
+        min_freq::T, max_freq::T, duration::T, Fs::T
+    ) where {T<:Real}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs]) "All arguments must be greater than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
@@ -596,29 +607,27 @@ Constructor for stimulus generation type in which
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
 """
-function UniformNoiseNoBins(; min_freq=100.0, max_freq=22e3, duration=0.5, Fs=44.1e3)
-    return UniformNoiseNoBins(min_freq, max_freq, duration, Fs)
+function UniformNoiseNoBins(;
+    min_freq::Real=100.0, max_freq::Real=22e3, duration::Real=0.5, Fs::Real=44.1e3
+)
+    vals = promote(min_freq, max_freq, duration, Fs)
+    return UniformNoiseNoBins{eltype(vals)}(vals...)
 end
 
 #####################################################
 
-struct GaussianNoiseNoBins <: Stimgen
-    min_freq::Real
-    max_freq::Real
-    duration::Real
-    Fs::Real
-    amplitude_mean::Real
-    amplitude_var::Real
+struct GaussianNoiseNoBins{T<:Real} <: Stimgen
+    min_freq::T
+    max_freq::T
+    duration::T
+    Fs::T
+    amplitude_mean::T
+    amplitude_var::T
 
     # Inner constructor to validate inputs
-    function GaussianNoiseNoBins(
-        min_freq::Real,
-        max_freq::Real,
-        duration::Real,
-        Fs::Real,
-        amplitude_mean::Real,
-        amplitude_var::Real,
-    )
+    function GaussianNoiseNoBins{T}(
+        min_freq::T, max_freq::T, duration::T, Fs::T, amplitude_mean::T, amplitude_var::T
+    ) where {T<:Real}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs]) "Only amplitude mean can be less than 0."
         @assert amplitude_var >= 0 "`amplitude_var` cannot be less than 0."
         @assert min_freq <= max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
@@ -643,16 +652,15 @@ Constructor for stimulus generation type in which
 - `amplitude_var::Real = 3`: The variance of the Gaussian. 
 """
 function GaussianNoiseNoBins(;
-    min_freq=100.0,
-    max_freq=22e3,
-    duration=0.5,
-    Fs=44.1e3,
-    amplitude_mean=-10,
-    amplitude_var=3,
+    min_freq::Real=100.0,
+    max_freq::Real=22e3,
+    duration::Real=0.5,
+    Fs::Real=44.1e3,
+    amplitude_mean::Real=-10,
+    amplitude_var::Real=3,
 )
-    return GaussianNoiseNoBins(
-        min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var
-    )
+    vals = promote(min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var)
+    return GaussianNoiseNoBins{eltype(vals)}(vals...)
 end
 
 #############################
@@ -757,7 +765,7 @@ function generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen,I<
 
     # Instantiate stimuli matrix
     stimuli_matrix = zeros(length(stim), n_trials)
-    spect_matrix = zeros(length(spect), n_trials) 
+    spect_matrix = zeros(length(spect), n_trials)
     stimuli_matrix[:, 1] = stim
     spect_matrix[:, 1] = spect
     for ii in 2:n_trials
