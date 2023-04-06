@@ -1026,11 +1026,13 @@ function generate_stimulus(s::BrimijoinGaussianSmoothed)
     # Create distributions
     d = Normal.(μ, σ)
 
+    normal = similar(frequency_vector)
+
     for i in 1:(s.n_bins)
         # Create a normal distribution with the correct number of points
-        normal = pdf.(d[i], frequency_vector)
+        normal .= pdf.(d[i], frequency_vector)
         # Rescale
-        normal = binned_repr[i] * normal ./ maximum(normal)
+        normal .= binned_repr[i] * normal ./ maximum(normal)
         # Add to the spectrum
         spect += normal
     end
