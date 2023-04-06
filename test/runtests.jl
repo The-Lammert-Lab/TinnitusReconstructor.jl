@@ -45,7 +45,7 @@ const BINNED_STIMGEN = [
 
 const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]
 
-@testset "Stimgen: $(typeof(BINNED_STIMGEN[i]))" for i in eachindex(BINNED_STIMGEN)
+@testset showtiming=true "Stimgen: $(typeof(BINNED_STIMGEN[i]))" for i in eachindex(BINNED_STIMGEN)
     stimgen = BINNED_STIMGEN[i]
     audio_file = "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
     audio = wav2spect(audio_file)
