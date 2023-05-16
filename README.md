@@ -1,7 +1,7 @@
 # TinnitusReconstructor
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://The-Lammert-Lab.github.io/TinnitusReconstructor.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://alec-hoyland.github.io/TinnitusReconstructor.jl/dev/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://the-lammert-lab.github.io/TinnitusReconstructor.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://the-lammert-lab.github.io/TinnitusReconstructor.jl/dev/)
 [![Build Status](https://github.com/The-Lammert-Lab/TinnitusReconstructor.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/The-Lammert-Lab/TinnitusReconstructor.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/The-Lammert-Lab/TinnitusReconstructor.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/The-Lammert-Lab/TinnitusReconstructor.jl)
 
@@ -49,4 +49,3 @@ r_cs = cor(recon_cs, binned_target_signal)
 
 ## Citation
 Please use the citation [here](https://github.com/The-Lammert-Lab/TinnitusReconstructor.jl/blob/da38672b2c7c28081665cc055deae23183452169/CITATION.bib) to reference this work.
-
