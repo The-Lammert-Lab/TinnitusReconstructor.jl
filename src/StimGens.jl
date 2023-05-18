@@ -18,6 +18,23 @@ abstract type BinnedStimgen <: Stimgen end
 
 #####################################################
 
+"""
+    UniformPrior(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    the number of filled bins is selected from 
+    the Uniform distribution on the interval `[min_bins, max_bins]`.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
+- `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
 struct UniformPrior{T<:Real,I<:Integer} <: BinnedStimgen
     min_freq::T
     max_freq::T
@@ -40,23 +57,6 @@ struct UniformPrior{T<:Real,I<:Integer} <: BinnedStimgen
     end
 end
 
-"""
-    UniformPrior(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    the number of filled bins is selected from 
-    the Uniform distribution on the interval `[min_bins, max_bins]`.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
-- `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-"""
 function UniformPrior(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -73,6 +73,23 @@ end
 
 #####################################################
 
+"""
+    GaussianPrior(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    the number of filled bins is selected from 
+    from a Gaussian distribution with known mean and variance parameters.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins_filled_var::Real = 1`: The variance of number of bins that may be filled on any stimuli.
+- `n_bins_filled_mean::Integer = 20`: The mean number of bins that may be filled on any stimuli.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
 struct GaussianPrior{T<:Real,I<:Integer} <: BinnedStimgen
     min_freq::T
     max_freq::T
@@ -104,23 +121,6 @@ struct GaussianPrior{T<:Real,I<:Integer} <: BinnedStimgen
     end
 end
 
-"""
-    GaussianPrior(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    the number of filled bins is selected from 
-    from a Gaussian distribution with known mean and variance parameters.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins_filled_var::Real = 1`: The variance of number of bins that may be filled on any stimuli.
-- `n_bins_filled_mean::Integer = 20`: The mean number of bins that may be filled on any stimuli.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-"""
 function GaussianPrior(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -137,6 +137,22 @@ end
 
 #####################################################
 
+"""
+    Bernoulli(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    each tonotopic bin has a probability `bin_prob`
+    of being at 0 dB, otherwise it is at $unfilled_db dB.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `bin_prob::Real=0.3`: The probability of a bin being filled.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
 struct Bernoulli{T<:Real,I<:Integer} <: BinnedStimgen
     min_freq::T
     max_freq::T
@@ -157,22 +173,6 @@ struct Bernoulli{T<:Real,I<:Integer} <: BinnedStimgen
     end
 end
 
-"""
-    Bernoulli(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    each tonotopic bin has a probability `bin_prob`
-    of being at 0 dB, otherwise it is at $unfilled_db dB.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `bin_prob::Real=0.3`: The probability of a bin being filled.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-"""
 function Bernoulli(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -187,6 +187,24 @@ end
 
 #####################################################
 
+"""
+    Brimijoin(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    each tonotopic bin is filled with an amplitude 
+    value from an equidistant list with equal probability.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `amp_min::Real = -20`: The lowest dB value a bin can have.
+- `amp_max::Real = 0`: The highest dB value a bin can have.
+- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
 struct Brimijoin{T<:Real,I<:Integer} <: BinnedStimgen
     min_freq::T
     max_freq::T
@@ -217,24 +235,6 @@ struct Brimijoin{T<:Real,I<:Integer} <: BinnedStimgen
     end
 end
 
-"""
-    Brimijoin(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    each tonotopic bin is filled with an amplitude 
-    value from an equidistant list with equal probability.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `amp_min::Real = -20`: The lowest dB value a bin can have.
-- `amp_max::Real = 0`: The highest dB value a bin can have.
-- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-"""
 function Brimijoin(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -252,6 +252,25 @@ end
 
 #####################################################
 
+"""
+    BrimijoinGaussianSmoothed(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    each tonotopic bin is filled by a Gaussian 
+    with a maximum amplitude value chosen
+    from an equidistant list with equal probability.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `amp_min::Real = -20`: The lowest dB value a bin can have.
+- `amp_max::Real = 0`: The highest dB value a bin can have.
+- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
 struct BrimijoinGaussianSmoothed{T<:Real,I<:Integer} <: BinnedStimgen
     min_freq::T
     max_freq::T
@@ -282,25 +301,6 @@ struct BrimijoinGaussianSmoothed{T<:Real,I<:Integer} <: BinnedStimgen
     end
 end
 
-"""
-    BrimijoinGaussianSmoothed(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    each tonotopic bin is filled by a Gaussian 
-    with a maximum amplitude value chosen
-    from an equidistant list with equal probability.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `amp_min::Real = -20`: The lowest dB value a bin can have.
-- `amp_max::Real = 0`: The highest dB value a bin can have.
-- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-"""
 function BrimijoinGaussianSmoothed(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -318,6 +318,22 @@ end
 
 #####################################################
 
+"""
+    GaussianNoise(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    each tonotopic bin is filled with amplitude chosen from a Gaussian distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
+- `amplitude_var::Real = 3`: The variance of the Gaussian. 
+"""
 struct GaussianNoise{T<:Real,I<:Integer} <: BinnedStimgen
     min_freq::T
     max_freq::T
@@ -345,22 +361,6 @@ struct GaussianNoise{T<:Real,I<:Integer} <: BinnedStimgen
     end
 end
 
-"""
-    GaussianNoise(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    each tonotopic bin is filled with amplitude chosen from a Gaussian distribution.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
-- `amplitude_var::Real = 3`: The variance of the Gaussian. 
-"""
 function GaussianNoise(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -376,6 +376,20 @@ end
 
 #####################################################
 
+"""
+    UniformNoise(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    each tonotopic bin is filled with amplitude chosen from a Uniform distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
 struct UniformNoise{T<:Real,I<:Integer} <: BinnedStimgen
     min_freq::T
     max_freq::T
@@ -394,20 +408,6 @@ struct UniformNoise{T<:Real,I<:Integer} <: BinnedStimgen
     end
 end
 
-"""
-    UniformNoise(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    each tonotopic bin is filled with amplitude chosen from a Uniform distribution.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-"""
 function UniformNoise(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -421,6 +421,24 @@ end
 
 #####################################################
 
+"""
+    UniformPriorWeightedSampling(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    each tonotopic bin is filled from a uniform distribution on [`min_bins`, `max_bins`]
+    but which bins are filled is determined by a non-uniform distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `alpha_::Real = 1`: The tuning parameter that exponentiates the number of unique frequencies in each bin.
+- `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
+- `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+"""
 struct UniformPriorWeightedSampling{T<:Real,I<:Integer,Q<:AbstractVecOrMat{<:Real}} <:
        BinnedStimgen
     min_freq::T
@@ -473,24 +491,6 @@ struct UniformPriorWeightedSampling{T<:Real,I<:Integer,Q<:AbstractVecOrMat{<:Rea
     end
 end
 
-"""
-    UniformPriorWeightedSampling(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    each tonotopic bin is filled from a uniform distribution on [`min_bins`, `max_bins`]
-    but which bins are filled is determined by a non-uniform distribution.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `alpha_::Real = 1`: The tuning parameter that exponentiates the number of unique frequencies in each bin.
-- `min_bins::Integer = 10`: The minimum number of bins that may be filled on any stimuli.
-- `max_bins::Integer = 50`: The maximum number of bins that may be filled on any stimuli.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-"""
 function UniformPriorWeightedSampling(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -511,6 +511,23 @@ end
 
 #####################################################
 
+"""
+    PowerDistribution(; kwargs...) <: BinnedStimgen
+
+Stimulus generation type in which 
+    the frequencies in each bin are sampled 
+    from a power distribution learned
+    from tinnitus examples.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
+- `distribution_filepath::AbstractString=joinpath(@__DIR__, "distribution.csv")`: The filepath to the default power distribution from which stimuli are generated
+"""
 struct PowerDistribution{
     T<:Real,I<:Integer,Q<:AbstractVecOrMat{<:Real},S<:AbstractString
 } <: BinnedStimgen
@@ -542,23 +559,6 @@ struct PowerDistribution{
     end
 end
 
-"""
-    PowerDistribution(; kwargs...) <: BinnedStimgen
-
-Constructor for stimulus generation type in which 
-    the frequencies in each bin are sampled 
-    from a power distribution learned
-    from tinnitus examples.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-- `distribution_filepath::AbstractString=joinpath(@__DIR__, "distribution.csv")`: The filepath to the default power distribution from which stimuli are generated
-"""
 function PowerDistribution(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -577,6 +577,19 @@ end
 
 #####################################################
 
+"""
+    UniformNoiseNoBins(; kwargs...) <: Stimgen
+
+Stimulus generation type in which 
+    each frequency is chosen from a uniform distribution on [$unfilled_db, 0] dB.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+"""
 struct UniformNoiseNoBins{T<:Real} <: Stimgen
     min_freq::T
     max_freq::T
@@ -594,19 +607,6 @@ struct UniformNoiseNoBins{T<:Real} <: Stimgen
     end
 end
 
-"""
-    UniformNoiseNoBins(; kwargs...) <: Stimgen
-
-Constructor for stimulus generation type in which 
-    each frequency is chosen from a uniform distribution on [$unfilled_db, 0] dB.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-"""
 function UniformNoiseNoBins(;
     min_freq::Real=100.0, max_freq::Real=22e3, duration::Real=0.5, Fs::Real=44.1e3
 )
@@ -616,6 +616,21 @@ end
 
 #####################################################
 
+"""
+    GaussianNoiseNoBins(; kwargs...) <: Stimgen
+
+Stimulus generation type in which 
+    each frequency's amplitude is chosen according to a Gaussian distribution.
+
+# Keywords
+
+- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
+- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
+- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
+- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
+- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
+- `amplitude_var::Real = 3`: The variance of the Gaussian. 
+"""
 struct GaussianNoiseNoBins{T<:Real} <: Stimgen
     min_freq::T
     max_freq::T
@@ -636,21 +651,6 @@ struct GaussianNoiseNoBins{T<:Real} <: Stimgen
     end
 end
 
-"""
-    GaussianNoiseNoBins(; kwargs...) <: Stimgen
-
-Constructor for stimulus generation type in which 
-    each frequency's amplitude is chosen according to a Gaussian distribution.
-
-# Keywords
-
-- `min_freq::Real = 100`: The minimum frequency in range from which to sample.
-- `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
-- `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
-- `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
-- `amplitude_var::Real = 3`: The variance of the Gaussian. 
-"""
 function GaussianNoiseNoBins(;
     min_freq::Real=100.0,
     max_freq::Real=22e3,
@@ -670,14 +670,14 @@ end
 #############################
 
 # Getter functions
-@doc """
+"""
     fs(s::SG) where {SG<:Stimgen}
 
 Return the number of samples per second.
 """
 fs(s::SG) where {SG<:Stimgen} = s.Fs
 
-@doc """
+"""
     nsamples(s::SG) where {SG<:Stimgen}
 
 Return the number of samples as an Integer.
@@ -686,16 +686,16 @@ or an `InexactError` will be thrown.
 
 # Examples
 ```jldoctest
-julia> s = UniformPrior(;Fs=44.1e3, duration=0.5); nsamples(s)
+julia> s = UniformPrior(; Fs=44.1e3, duration=0.5); nsamples(s)
 22050
 
-julia> s = UniformPrior(;Fs=44.1e3, duration=0.7); nsamples(s)
+julia> s = UniformPrior(; Fs=44.1e3, duration=0.7); nsamples(s)
 ERROR: InexactError: Int64(30869.999999999996)
 """
 nsamples(s::SG) where {SG<:Stimgen} = convert(Int, fs(s) * s.duration)
 
 # Universal functions
-@doc """
+"""
     subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen,T<:Real,I<:Integer}
 
 Perform the synthetic subject decision process,
@@ -712,9 +712,11 @@ function subject_selection_process(
     return y, spect, binned_repr
 end
 
-# Convert target_signal to Vector if passed as an Array.
-@doc """
+# NOTE: Add check for second col is empty.
+"""
     subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen,T<:Real,I<:Integer}
+
+    Convert target_signal to Vector if passed as a Matrix.
 """
 function subject_selection_process(
     s::SG, target_signal::AbstractMatrix{T}, n_trials::I
@@ -722,7 +724,7 @@ function subject_selection_process(
     return subject_selection_process(s, vec(target_signal), n_trials)
 end
 
-@doc """
+"""
     generate_stimuli_matrix(s::SG, n_trials::I) where {SG<:Stimgen, I<:Integer}
 
 Generate `n_trials` of stimuli based on specifications in the stimgen type.
@@ -749,7 +751,7 @@ function generate_stimuli_matrix(s::SG, n_trials::I) where {SG<:Stimgen,I<:Integ
     return stimuli_matrix, Fs, spect_matrix, binned_repr_matrix
 end
 
-@doc """
+"""
     generate_stimuli_matrix(s::BS, n_trials::I) where {BS<:BinnedStimgen, I<:Integer}
 
 Generate `n_trials` of stimuli based on specifications in the stimgen type.
@@ -787,7 +789,7 @@ end
 
 #############################
 
-@doc """
+"""
     freq_bins(s::BS) where {BS<:BinnedStimgen}
 
 Generates a vector indicating which frequencies belong to the same bin,
@@ -818,21 +820,21 @@ Generates a vector indicating which frequencies belong to the same bin,
     return binnum, Fs, nfft, frequency_vector, bin_starts, bin_stops
 end
 
-@doc """
+"""
     empty_spectrum(s::BS) where {BS<:BinnedStimgen}
 
 Generate an `nfft x 1` vector of Ints, where all values are $unfilled_db. 
 """
 empty_spectrum(s::BS) where {BS<:BinnedStimgen} = unfilled_db * ones(Int(nsamples(s) ÷ 2))
 
-@doc """
+"""
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractVecOrMat{T}) where {BS<:BinnedStimgen,T}
 
 Convert a spectral representation into a binned representation.
  
 Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in each frequency bin,
     where `n_trials` = size(binned_repr, 2).
-@doc """
+"""
 function spect2binnedrepr(s::BS, spect::AbstractVecOrMat{T}) where {BS<:BinnedStimgen,T}
     binned_repr = zeros(s.n_bins, size(spect, 2))
     B, = freq_bins(s)
@@ -847,7 +849,7 @@ function spect2binnedrepr(s::BS, spect::AbstractVecOrMat{T}) where {BS<:BinnedSt
     return binned_repr
 end
 
-@doc """
+"""
     binnedrepr2spect(s::BinnedStimgen, binned_repr::AbstractArray{T}) where {BS<:BinnedStimgen,T}
 
 Convert the binned representation into a spectral representation.
@@ -918,12 +920,15 @@ end
 
 #############################
 
-@doc """
+"""
     generate_stimulus(s::Stimgen)
 
 Generate one stimulus sound.
 
-Returns waveform, sample rate, spectral representation, binned representation, and a frequency vector. Methods are specialized for each concrete subtype of Stimgen.
+Returns waveform, sample rate, spectral representation, 
+binned representation, and a frequency vector 
+(the last two empty if s >: BinnedStimgen). 
+Methods are specialized for each concrete subtype of Stimgen.
 """
 function generate_stimulus end
 

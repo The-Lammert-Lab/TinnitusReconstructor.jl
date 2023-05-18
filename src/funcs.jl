@@ -35,7 +35,7 @@ end
 """
     synthesize_audio(X, nfft)
 
-Synthesize audio from spectrum, X
+Synthesize audio from spectrum `X`
 """
 function synthesize_audio(X, nfft)
     phase = 2π * (rand(nfft ÷ 2) .- 0.5) # Assign random phase to freq spec
@@ -147,7 +147,7 @@ cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 # """
 # function subject_selection_process end
 
-@doc """
+"""
     subject_selection_process(stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}) where {T<:Real}
 
 Perform the synthetic subject decision process, given a matrix of precomputed stimuli `stimuli_matrix`
@@ -158,26 +158,28 @@ Return the `n`-dimensional response vector `y` as well as the `stimuli_matrix`
 as well as `nothing` for the binned representation.
 """
 function subject_selection_process(
-    stimuli_matrix::AbstractVecOrMat, target_signal::AbstractVector
-)
+    stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}
+) where {T<:Real}
     e = stimuli_matrix'target_signal
     y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
     return y, stimuli_matrix, nothing
 end
 
-@doc """
+"""
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 """
-function subject_selection_process(stimuli::AbstractArray, target_signal::AbstractMatrix)
+function subject_selection_process(
+    stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}
+) where {T<:Real}
     return subject_selection_process(stimuli, vec(target_signal))
 end
 
+# TODO: use Unitful to add dimensions to these values.
 """
     crop_signal!(audio::SampleBuf{T, I}; start=0, stop=1) where {T, I}
 
 Crops an audio buffer to between `start` and `stop` in seconds.
-TODO: use Unitful to add dimensions to these values.
 """
 function crop_signal!(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
     fs = samplerate(audio)
@@ -185,11 +187,11 @@ function crop_signal!(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I
     return audio
 end
 
+# TODO: use Unitful to add dimensions to these values.
 """
     crop_signal(audio::SampleBuf{T, I}; start=0, stop=1) where {T, I}
 
 Returns an audio buffer cropped to between `start` and `stop` in seconds.
-TODO: use Unitful to add dimensions to these values.
 
 See also [`crop_signal!`](@ref).
 """
@@ -224,7 +226,7 @@ function wav2spect(audio_file::String; duration=0.5)
     return mean(abs.(S); dims=2)
 end
 
-# @doc raw"""
+# raw"""
 #     dB(x)
 
 # Convert from amplitude-scale to decibel-scale via
@@ -244,7 +246,7 @@ end
 # """
 # dB(x) = oftype(x / 1, 10) * log10(x)
 
-# @doc raw"""
+# raw"""
 #     invdB(x)
 
 # Convert from decibel-scale to amplitude-scale via
