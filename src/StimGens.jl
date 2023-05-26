@@ -876,7 +876,7 @@ Builds the default power distribution from ATA tinnitus sample files.
 function build_distribution(s::PowerDistribution; save_path::AbstractString=@__DIR__)
     @assert ispath(save_path) "`save_path` must be a valid path"
 
-    ATA_files = readdir(abspath("ATA"); join=true)
+    ATA_files = readdir(joinpath(pkgdir(TinnitusReconstructor),"ATA"); join=true)
     freq_vec = get_freq(s)
 
     audio = load(pop!(ATA_files))
