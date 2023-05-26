@@ -105,20 +105,6 @@ end
 
 cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
 
-# """
-#     subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
-#     subject_selection_process(s::SG, target_signal::AbstractMatrix{T}, n_trials::I) where {SG<:Stimgen, T<:Real, I<:Integer}
-#     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractVector{T}) where {T<:Real}
-#     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
-
-# Idealized model of a subject performing the task.
-
-# Specify a `Stimgen` type from which to generate stimuli or input a stimuli matrix.
-# If `target_signal` is a matrix, it must be one dimensional because that method simply applies `vec(target_signal)`.
-# Return an `n_trials x 1` or `size(stimuli, 1) x 1` vector of `-1` for "no" and `1` for "yes".
-# """
-# function subject_selection_process end
-
 """
     subject_selection_process(stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}) where {T<:Real}
 
@@ -198,45 +184,48 @@ function wav2spect(audio_file::String; duration=0.5)
     return mean(abs.(S); dims=2)
 end
 
-# raw"""
-#     dB(x)
+raw"""
+    dB(x)
 
-# Convert from amplitude-scale to decibel-scale via
+Convert from amplitude-scale to decibel-scale via
 
-# ``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
+``\mathrm{dB}(x) = 10 \mathrm{log10}(x)``
 
-# # Examples
-# ```jldoctest
+# Examples
+```jldoctest
 
-# julia> TinnitusReconstructor.dB.([1, 2, 100])
-# 3-element Vector{Float64}:
-#   0.0
-#   3.010299956639812
-#  20.0
-# ````
+julia> TinnitusReconstructor.dB.([1, 2, 100])
+3-element Vector{Float64}:
+  0.0
+  3.010299956639812
+ 20.0
+````
 
-# """
-# dB(x) = oftype(x / 1, 10) * log10(x)
+# See also
+* [`invdB`](@ref)
 
-# raw"""
-#     invdB(x)
+"""
+dB(x) = oftype(x / 1, 10) * log10(x)
 
-# Convert from decibel-scale to amplitude-scale via
+raw"""
+    invdB(x)
 
-# ``\mathrm{invdB}(x) = 10^{x/10}``
+Convert from decibel-scale to amplitude-scale via
 
-# # Examples
-# ```jldoctest
-# julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
-# 5-element Vector{Float64}:
-#  1.0e-10
-#  1.0
-#  1.2589254117941673
-#  1.5848931924611136
-#  1.0e10
-# ```
+``\mathrm{invdB}(x) = 10^{x/10}``
 
-# # See also
-# * [`dB`](@ref)
-# """
-# invdB(x) = oftype(x / 1, 10)^(x / oftype(x / 1, 10))
+# Examples
+```jldoctest
+julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
+5-element Vector{Float64}:
+ 1.0e-10
+ 1.0
+ 1.2589254117941673
+ 1.5848931924611136
+ 1.0e10
+```
+
+# See also
+* [`dB`](@ref)
+"""
+invdB(x) = oftype(x / 1, 10)^(x / oftype(x / 1, 10))

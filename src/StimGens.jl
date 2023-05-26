@@ -889,7 +889,7 @@ function build_distribution(s::PowerDistribution; save_path::AbstractString=@__D
     pxx = abs.(Y[1:(Fs_file ÷ 2 + 1)])
 
     power_spectra = zeros(length(pxx), length(ATA_files) + 1)
-    power_spectra[:, 1] = pow2db.(pxx)
+    power_spectra[:, 1] = TinnitusReconstructor.dB.(pxx)
 
     for (ind, file) in enumerate(eachrow(ATA_files))
         audio = load(file[1])
@@ -898,7 +898,7 @@ function build_distribution(s::PowerDistribution; save_path::AbstractString=@__D
         Y = fft(y) / length(y)
         pxx = abs.(Y[1:(Fs_file ÷ 2 + 1)])
 
-        power_spectra[:, ind] = pow2db.(pxx)
+        power_spectra[:, ind] = TinnitusReconstructor.dB.(pxx)
     end
 
     spect = mean(power_spectra; dims=2)

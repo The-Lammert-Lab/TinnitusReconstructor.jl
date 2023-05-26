@@ -10,7 +10,6 @@ subject_selection_process(stimuli_matrix::AbstractVecOrMat{T}, target_signal::Ab
 ```
 
 ## `Reconstruction related functions`
-
 ```@docs
 TinnitusReconstructor.gs
 TinnitusReconstructor.cs
@@ -24,4 +23,6 @@ TinnitusReconstructor.synthesize_audio
 TinnitusReconstructor.crop_signal!
 TinnitusReconstructor.crop_signal
 TinnitusReconstructor.wav2spect
+TinnitusReconstructor.dB
+TinnitusReconstructor.invdB
 ```
