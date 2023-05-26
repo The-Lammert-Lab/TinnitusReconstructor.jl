@@ -49,7 +49,7 @@ const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]
     stimgen = BINNED_STIMGEN[i]
     audio_file = "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
     audio = wav2spect(audio_file)
-    target_signal = 10 * log10.(audio)
+    target_signal = TinnitusReconstructor.dB.(audio)
 
     binned_target_signal = spect2binnedrepr(stimgen, target_signal)
 
