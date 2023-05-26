@@ -2,8 +2,6 @@ using TinnitusReconstructor
 using Statistics
 using Test
 
-# TODO: Improve tests
-
 const n_bins = 80
 const min_freq = 100
 const max_freq = 13e3
@@ -40,7 +38,7 @@ const BINNED_STIMGEN = [
         max_bins=10,
         alpha_=1,
     ),
-    PowerDistribution(; n_bins=n_bins, max_freq=max_freq, min_freq=min_freq),
+    PowerDistribution(; n_bins=n_bins, max_freq=max_freq, min_freq=min_freq, distribution_filepath="."),
 ]
 
 const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]
@@ -51,20 +49,23 @@ const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]
     stimgen = BINNED_STIMGEN[i]
     audio_file = "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
     audio = wav2spect(audio_file)
-    target_signal = 10 * log10.(audio)
+    target_signal = TinnitusReconstructor.dB.(audio)
 
     binned_target_signal = spect2binnedrepr(stimgen, target_signal)
 
     responses, _, stim = subject_selection_process(stimgen, target_signal, n_trials)
-    recon = gs(responses, stim')
-    r = cor(recon, binned_target_signal)
+    recon_linear = gs(responses, stim')
+    recon_cs = cs(responses, stim')
+    r_linear = cor(recon_linear, binned_target_signal)
+    r_cs = cor(recon_cs, binned_target_signal)
 
     stimuli_matrix, Fs, spect_matrix, binned_repr_matrix = generate_stimuli_matrix(
         stimgen, n_trials
     )
 
     @test size(binned_target_signal) == (stimgen.n_bins, 1)
-    @test r[1] >= 0.7
+    @test r_linear[1] >= 0.7
+    @test r_cs[1] >= 0.7
 
     @test size(stimuli_matrix, 2) == n_trials
     @test size(spect_matrix, 2) == n_trials
