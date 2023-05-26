@@ -5,34 +5,6 @@ hz2mels(f) = 2595 * log10(1 + (f / 700))
 mels2hz(m) = 700 * (10^(m / 2595) - 1)
 
 """
-    play_scaled_audio(x, Fs) 
-
-Scales audio signal from -1 to 1 then plays it. Adapted from MATLAB's soundsc().
-"""
-function play_scaled_audio(x, Fs)
-
-    # Translated MATLAB
-    xmax = @. $maximum(abs, x[!isinf(x)])
-
-    slim = [-xmax, xmax]
-
-    dx = diff(slim)
-    if iszero(dx)
-        # Protect against divide-by-zero errors:
-        x = zeros(size(x))
-    else
-        x = @. (x - slim[1]) / dx * 2 - 1
-    end
-
-    # This is using PortAudio, SampledSignals
-    PortAudioStream(0, 2; samplerate=Fs) do stream
-        write(stream, x)
-    end
-
-    return nothing
-end
-
-"""
     synthesize_audio(X, nfft)
 
 Synthesize audio from spectrum `X`
