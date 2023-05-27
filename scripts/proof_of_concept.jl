@@ -8,7 +8,7 @@ using FileIO
 using Statistics
 
 ### Setup
-stimgen = UniformPrior(; max_freq=13e3, n_bins=8, min_bins=3, max_bins=6)
+stimgen = UniformPrior(; max_freq = 13e3, n_bins = 8, min_bins = 3, max_bins = 6)
 
 Γ = 2
 n_trials = 100
@@ -43,13 +43,9 @@ r_std_cs = std(r_loop_cs)
 
 ### Print results
 println("Mean linear r using a generated stimuli matrix for n = $n is $r_mean_lr")
-println(
-    "Standard deviation of linear r using a generated stimuli matrix for n = $n is $r_std_lr",
-)
+println("Standard deviation of linear r using a generated stimuli matrix for n = $n is $r_std_lr")
 
 println("----------")
 
 println("Mean CS r using a generated stimuli matrix for n = $n is $r_mean_cs")
-println(
-    "Standard deviation of CS r using a generated stimuli matrix for n = $n is $r_std_cs"
-)
+println("Standard deviation of CS r using a generated stimuli matrix for n = $n is $r_std_cs")
