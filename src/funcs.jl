@@ -181,7 +181,7 @@ function wav2spect(audio_file::String; duration = 0.5)
     return mean(abs.(S); dims = 2)
 end
 
-raw"""
+@doc raw"""
     dB(x)
 
 Convert from amplitude-scale to decibel-scale via
@@ -204,7 +204,7 @@ julia> TinnitusReconstructor.dB.([1, 2, 100])
 """
 dB(x) = oftype(x / 1, 10) * log10(x)
 
-raw"""
+@doc raw"""
     invdB(x)
 
 Convert from decibel-scale to amplitude-scale via

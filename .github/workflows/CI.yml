@@ -57,5 +57,4 @@ jobs:
             using Documenter: DocMeta, doctest
             using TinnitusReconstructor
             DocMeta.setdocmeta!(TinnitusReconstructor, :DocTestSetup, :(using TinnitusReconstructor); recursive=true)
-            doctest(TinnitusReconstructor)
-            include("docs/make.jl")'
+            doctest(TinnitusReconstructor)'
