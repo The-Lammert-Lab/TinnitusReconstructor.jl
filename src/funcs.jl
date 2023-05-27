@@ -39,13 +39,13 @@ Passive algorithm for 1-bit compressed sensing with no basis.
 # References
 - Zhang, L., Yi, J. and Jin, R., 2014, June. Efficient algorithms for robust one-bit compressive sensing. In *International Conference on Machine Learning* (pp. 820-828). PMLR.
 """
-function zhangpassivegamma(Φ::AbstractArray{T}, y, Γ::Integer) where {T<:Real}
+function zhangpassivegamma(Φ::AbstractArray{T}, y, Γ::Integer) where {T <: Real}
     m = size(Φ, 1)
     n = size(Φ, 2)
 
     α = (1 / m) * (Φ'y)
 
-    val = sort(abs.(α); rev=true)
+    val = sort(abs.(α); rev = true)
     γ = val[Γ + 1]
 
     if norm(α, Inf) <= γ
@@ -75,7 +75,7 @@ One-bit compressed sensing reverse correlation with basis.
 
 - Zhang, L., Yi, J. and Jin, R., 2014, June. Efficient algorithms for robust one-bit compressive sensing. In *International Conference on Machine Learning* (pp. 820-828). PMLR.
 """
-function cs(responses, Φ::AbstractArray{T}, Γ::Integer=32) where {T<:Real}
+function cs(responses, Φ::AbstractArray{T}, Γ::Integer = 32) where {T <: Real}
     n_samples = length(responses)
     len_signal = size(Φ, 2)
 
@@ -103,7 +103,7 @@ function cs(responses, Φ::AbstractArray{T}, Γ::Integer=32) where {T<:Real}
     return x
 end
 
-cs_no_basis(Φ, responses, Γ=32) = zhangpassivegamma(Φ, responses, Γ)
+cs_no_basis(Φ, responses, Γ = 32) = zhangpassivegamma(Φ, responses, Γ)
 
 """
     subject_selection_process(stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}) where {T<:Real}
@@ -115,21 +115,19 @@ The `target_signal` is a flat vector of size `n` or an `n x 1` matrix.
 Return the `n`-dimensional response vector `y` as well as the `stimuli_matrix`
 as well as `nothing` for the binned representation.
 """
-function subject_selection_process(
-    stimuli_matrix::AbstractVecOrMat{T}, target_signal::AbstractVector{T}
-) where {T<:Real}
+function subject_selection_process(stimuli_matrix::AbstractVecOrMat{T},
+                                   target_signal::AbstractVector{T}) where {T <: Real}
     e = stimuli_matrix'target_signal
     y = -ones(Int, size(e))
-    y[e .>= quantile(e, 0.5; alpha=0.5, beta=0.5)] .= 1
+    y[e .>= quantile(e, 0.5; alpha = 0.5, beta = 0.5)] .= 1
     return y, stimuli_matrix, nothing
 end
 
 """
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 """
-function subject_selection_process(
-    stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}
-) where {T<:Real}
+function subject_selection_process(stimuli::AbstractArray{T},
+                                   target_signal::AbstractMatrix{T}) where {T <: Real}
     return subject_selection_process(stimuli, vec(target_signal))
 end
 
@@ -139,7 +137,7 @@ end
 
 Crops an audio buffer to between `start` and `stop` in seconds.
 """
-function crop_signal!(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
+function crop_signal!(audio::AbstractSampleBuf{T, I}; start = 0, stop = 1) where {T, I}
     fs = samplerate(audio)
     audio.data = audio.data[(Int(fs * start) + 1):(Int(fs * stop)), :]
     return audio
@@ -153,12 +151,12 @@ Returns an audio buffer cropped to between `start` and `stop` in seconds.
 
 See also [`crop_signal!`](@ref).
 """
-function crop_signal(audio::AbstractSampleBuf{T,I}; start=0, stop=1) where {T,I}
+function crop_signal(audio::AbstractSampleBuf{T, I}; start = 0, stop = 1) where {T, I}
     fs = samplerate(audio)
     return audio[(Int(fs * start) + 1):(Int(fs * stop))]
 end
 
-function DSP.stft(audio::AbstractSampleBuf{T,I}, args...; kwargs...) where {T,I}
+function DSP.stft(audio::AbstractSampleBuf{T, I}, args...; kwargs...) where {T, I}
     s = float(vec(audio.data))
     S = stft(s, args...; kwargs...)
     return S
@@ -170,18 +168,17 @@ end
 Load an audio file, crop it to `duration`,
     then compute and return the short time Fourier transform.
 """
-function wav2spect(audio_file::String; duration=0.5)
+function wav2spect(audio_file::String; duration = 0.5)
     audio = load(audio_file)
-    crop_signal!(audio; start=0, stop=duration)
+    crop_signal!(audio; start = 0, stop = duration)
 
     samples = length(audio)
     fs = samplerate(audio)
 
-    S = stft(
-        audio, samples ÷ 4, div(samples ÷ 4, 2); nfft=samples - 1, fs=fs, window=hamming
-    )
+    S = stft(audio, samples ÷ 4, div(samples ÷ 4, 2); nfft = samples - 1, fs = fs,
+             window = hamming)
 
-    return mean(abs.(S); dims=2)
+    return mean(abs.(S); dims = 2)
 end
 
 raw"""
