@@ -23,4 +23,4 @@ makedocs(;
          ])
 
 deploydocs(; repo = "github.com/The-Lammert-Lab/TinnitusReconstructor.jl",
-           devbranch = "main")
+           devbranch = "main", push_preview = false)
