@@ -22,5 +22,5 @@ makedocs(;
              "Utility Functions" => "funcs.md",
          ])
 
-deploydocs(; repo = "github.com/the-lammert-lab/TinnitusReconstructor.jl",
+deploydocs(; repo = "github.com/The-Lammert-Lab/TinnitusReconstructor.jl",
            devbranch = "main")
