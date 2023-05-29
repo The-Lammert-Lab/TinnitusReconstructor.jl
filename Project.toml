@@ -23,10 +23,13 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 DSP = "0.7"
 FFTW = "1"
+Documenter = "0.27"
+Distributions = "0.25"
 FastBroadcast = "0.2"
 FileIO = "1"
 Interpolations = "0.14"
 LibSndFile = "2"
+Memoize = "0.4"
 SampledSignals = "2"
 StatsBase = "0.34"
 
