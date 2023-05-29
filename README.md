@@ -4,6 +4,8 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://the-lammert-lab.github.io/TinnitusReconstructor.jl/dev/)
 [![Build Status](https://github.com/The-Lammert-Lab/TinnitusReconstructor.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/The-Lammert-Lab/TinnitusReconstructor.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/The-Lammert-Lab/TinnitusReconstructor.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/The-Lammert-Lab/TinnitusReconstructor.jl)
+[![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
+[![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
 
 This package provides both a range of auditory stimulus generation techniques as well as 
 reverse correlation reconstruction (RC) functions. 
