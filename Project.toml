@@ -27,6 +27,7 @@ FastBroadcast = "0.2"
 FileIO = "1"
 Interpolations = "0.14"
 LibSndFile = "2"
+Memoize = "0.4"
 SampledSignals = "2"
 StatsBase = "0.34"
 
