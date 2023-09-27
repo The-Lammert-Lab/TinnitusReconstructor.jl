@@ -824,7 +824,7 @@ function spect2binnedrepr(s::BS, spect::AbstractVecOrMat{T}) where {BS <: Binned
 
     for bin_num in 1:(s.n_bins)
         a = spect[B .== bin_num, :]
-        binned_repr[bin_num, :] .= mean(a, dims=1)
+        binned_repr[bin_num, :] .= mean(a, dims = 1)
     end
 
     return binned_repr
