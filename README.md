@@ -50,4 +50,15 @@ r_cs = cor(recon_cs, binned_target_signal)
 ```
 
 ## Citation
-Please use the citation [here](https://github.com/The-Lammert-Lab/TinnitusReconstructor.jl/blob/da38672b2c7c28081665cc055deae23183452169/CITATION.bib) to reference this work.
+```
+@article{Hoyland2023,
+	author={Hoyland, Alec and Barnett, Nelson V. and Roop, Benjamin W. and Alexandrou, Danae and Caplan, Myah and Mills, Jacob and Parrell, Benjamin and Chari, Divya A. and Lammert, Adam C.},
+	journal={IEEE Open Journal of Engineering in Medicine and Biology}, 
+	title={Reverse Correlation Uncovers More Complete Tinnitus Spectra}, 
+	year={2023},
+	volume={4},
+	number={},
+	pages={116-118},
+	doi={10.1109/OJEMB.2023.3275051}
+}
+```
