@@ -167,8 +167,10 @@ end
 """
     wav2spect(audio_file::String; duration=0.5)
 
-Load an audio file, crop it to `duration`,
-    then compute and return the short time Fourier transform.
+Load an audio file, crop it to `duration` seconds,
+compute the short-time Fourier transform (STFT),
+convert to decibels, and then average across STFT time-windows
+to return the spectrum.
 """
 function wav2spect(audio_file::String; duration = 0.5)
     audio = load(audio_file)
@@ -180,7 +182,7 @@ function wav2spect(audio_file::String; duration = 0.5)
     S = stft(audio, samples ÷ 4, div(samples ÷ 4, 2); nfft = samples - 1, fs = fs,
         window = hamming)
 
-    return mean(abs.(S); dims = 2)
+    return mean(dB.(abs.(S)); dims = 2)
 end
 
 @doc raw"""
