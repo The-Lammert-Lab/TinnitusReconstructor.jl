@@ -6,7 +6,7 @@ using StatsBase: mean
 
 #############################
 "dB level of unfilled bins"
-const unfilled_db = -100
+const UNFILLED_DB = -100
 
 "Abstract supertype for all stimulus generation."
 abstract type Stimgen end
@@ -23,8 +23,8 @@ abstract type BinnedStimgen <: Stimgen end
 """
     UniformPrior(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
-    the number of filled bins is selected from 
+Stimulus generation type in which
+    the number of filled bins is selected from
     the Uniform distribution on the interval `[min_bins, max_bins]`.
 
 # Keywords
@@ -76,8 +76,8 @@ end
 """
     GaussianPrior(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
-    the number of filled bins is selected from 
+Stimulus generation type in which
+    the number of filled bins is selected from
     from a Gaussian distribution with known mean and variance parameters.
 
 # Keywords
@@ -134,9 +134,9 @@ end
 """
     Bernoulli(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
+Stimulus generation type in which
     each tonotopic bin has a probability `bin_prob`
-    of being at 0 dB, otherwise it is at $unfilled_db dB.
+    of being at 0 dB, otherwise it is at $UNFILLED_DB dB.
 
 # Keywords
 
@@ -182,8 +182,8 @@ end
 """
     Brimijoin(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
-    each tonotopic bin is filled with an amplitude 
+Stimulus generation type in which
+    each tonotopic bin is filled with an amplitude
     value from an equidistant list with equal probability.
 
 # Keywords
@@ -194,7 +194,7 @@ Stimulus generation type in which
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
 - `amp_min::Real = -20`: The lowest dB value a bin can have.
 - `amp_max::Real = 0`: The highest dB value a bin can have.
-- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`.
 - `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 struct Brimijoin{T <: Real, I <: Integer} <: BinnedStimgen
@@ -244,8 +244,8 @@ end
 """
     BrimijoinGaussianSmoothed(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
-    each tonotopic bin is filled by a Gaussian 
+Stimulus generation type in which
+    each tonotopic bin is filled by a Gaussian
     with a maximum amplitude value chosen
     from an equidistant list with equal probability.
 
@@ -257,7 +257,7 @@ Stimulus generation type in which
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
 - `amp_min::Real = -20`: The lowest dB value a bin can have.
 - `amp_max::Real = 0`: The highest dB value a bin can have.
-- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`. 
+- `amp_step::Int = 6`: The number of evenly spaced steps between `amp_min` and `amp_max`.
 - `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
 """
 struct BrimijoinGaussianSmoothed{T <: Real, I <: Integer} <: BinnedStimgen
@@ -307,7 +307,7 @@ end
 """
     GaussianNoise(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
+Stimulus generation type in which
     each tonotopic bin is filled with amplitude chosen from a Gaussian distribution.
 
 # Keywords
@@ -317,8 +317,8 @@ Stimulus generation type in which
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
 - `n_bins::Integer = 100`: The number of bins into which to partition the frequency range.
-- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
-- `amplitude_var::Real = 3`: The variance of the Gaussian. 
+- `amplitude_mean::Real = -10`: The mean of the Gaussian.
+- `amplitude_var::Real = 3`: The variance of the Gaussian.
 """
 struct GaussianNoise{T <: Real, I <: Integer} <: BinnedStimgen
     min_freq::T
@@ -362,7 +362,7 @@ end
 """
     UniformNoise(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
+Stimulus generation type in which
     each tonotopic bin is filled with amplitude chosen from a Uniform distribution.
 
 # Keywords
@@ -405,7 +405,7 @@ end
 """
     UniformPriorWeightedSampling(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
+Stimulus generation type in which
     each tonotopic bin is filled from a uniform distribution on [`min_bins`, `max_bins`]
     but which bins are filled is determined by a non-uniform distribution.
 
@@ -496,8 +496,8 @@ end
 """
     PowerDistribution(; kwargs...) <: BinnedStimgen
 
-Stimulus generation type in which 
-    the frequencies in each bin are sampled 
+Stimulus generation type in which
+    the frequencies in each bin are sampled
     from a power distribution learned
     from tinnitus examples.
 
@@ -570,8 +570,8 @@ end
 """
     UniformNoiseNoBins(; kwargs...) <: Stimgen
 
-Stimulus generation type in which 
-    each frequency is chosen from a uniform distribution on [$unfilled_db, 0] dB.
+Stimulus generation type in which
+    each frequency is chosen from a uniform distribution on [$UNFILLED_DB, 0] dB.
 
 # Keywords
 
@@ -608,7 +608,7 @@ end
 """
     GaussianNoiseNoBins(; kwargs...) <: Stimgen
 
-Stimulus generation type in which 
+Stimulus generation type in which
     each frequency's amplitude is chosen according to a Gaussian distribution.
 
 # Keywords
@@ -617,8 +617,8 @@ Stimulus generation type in which
 - `max_freq::Real = 22e3`: The maximum frequency in range from which to sample.
 - `duration::Real = 0.5`: The length of time for which stimuli are played in seconds.
 - `Fs::Real = 44.1e3`: The frequency of the stimuli in Hz.
-- `amplitude_mean::Real = -10`: The mean of the Gaussian. 
-- `amplitude_var::Real = 3`: The variance of the Gaussian. 
+- `amplitude_mean::Real = -10`: The mean of the Gaussian.
+- `amplitude_var::Real = 3`: The variance of the Gaussian.
 """
 struct GaussianNoiseNoBins{T <: Real} <: Stimgen
     min_freq::T
@@ -652,7 +652,7 @@ end
 
 #############################
 
-## Stimgen functions  
+## Stimgen functions
 
 #############################
 
@@ -716,7 +716,7 @@ end
 
 Generate `n_trials` of stimuli based on specifications in the stimgen type.
 
-Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`. 
+Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`.
     `binned_repr_matrix` = nothing if s >: BinnedStimgen.
 """
 function generate_stimuli_matrix(s::SG, n_trials::I) where {SG <: Stimgen, I <: Integer}
@@ -743,7 +743,7 @@ end
 
 Generate `n_trials` of stimuli based on specifications in the stimgen type.
 
-Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`. 
+Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`.
 """
 function generate_stimuli_matrix(s::BS,
     n_trials::I) where {BS <: BinnedStimgen, I <: Integer}
@@ -771,7 +771,7 @@ end
 
 #############################
 
-## BinnedStimgen functions  
+## BinnedStimgen functions
 
 #############################
 
@@ -804,15 +804,15 @@ end
 """
     empty_spectrum(s::BS) where {BS<:BinnedStimgen}
 
-Generate an `nfft x 1` vector of Ints, where all values are $unfilled_db. 
+Generate an `nfft x 1` vector of Ints, where all values are $UNFILLED_DB.
 """
-empty_spectrum(s::BS) where {BS <: BinnedStimgen} = unfilled_db * ones(Int(nsamples(s) ÷ 2))
+empty_spectrum(s::BS) where {BS <: BinnedStimgen} = UNFILLED_DB * ones(Int(nsamples(s) ÷ 2))
 
 """
     spect2binnedrepr(s::BinnedStimgen, spect::AbstractVecOrMat{T}) where {BS<:BinnedStimgen,T}
 
 Convert a spectral representation into a binned representation.
- 
+
 Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in each frequency bin,
     where `n_trials` = size(binned_repr, 2).
 """
@@ -898,7 +898,7 @@ end
 
 #############################
 
-## generate_stimulus methods  
+## generate_stimulus methods
 
 #############################
 
@@ -907,9 +907,9 @@ end
 
 Generate one stimulus sound.
 
-Returns waveform, sample rate, spectral representation, 
-binned representation, and a frequency vector 
-(the last two empty if s >: BinnedStimgen). 
+Returns waveform, sample rate, spectral representation,
+binned representation, and a frequency vector
+(the last two empty if s >: BinnedStimgen).
 Methods are specialized for each concrete subtype of Stimgen.
 """
 function generate_stimulus end
@@ -931,7 +931,7 @@ function generate_stimulus(s::UniformPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = UNFILLED_DB * ones(Int, s.n_bins)
     binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
@@ -954,7 +954,7 @@ function generate_stimulus(s::GaussianPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = UNFILLED_DB * ones(Int, s.n_bins)
     binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
@@ -966,7 +966,7 @@ function generate_stimulus(s::Bernoulli)
     spect = empty_spectrum(s)
 
     # Get binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = UNFILLED_DB * ones(Int, s.n_bins)
     binned_repr[rand(s.n_bins) .< s.bin_prob] .= 0
 
     # Set spectrum ranges corresponding to bins to bin level.
@@ -1025,7 +1025,7 @@ function generate_stimulus(s::BrimijoinGaussianSmoothed)
     end
 
     spect = (spect .- minimum(spect)) ./ (maximum(spect) .- minimum(spect))
-    spect = -unfilled_db .* (spect .- 1)
+    spect = -UNFILLED_DB .* (spect .- 1)
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -1056,7 +1056,7 @@ function generate_stimulus(s::UniformNoise)
     spect = empty_spectrum(s)
 
     # Get binned representation from random values of Uniform distribution
-    binned_repr = rand(Uniform(unfilled_db, 0), s.n_bins)
+    binned_repr = rand(Uniform(UNFILLED_DB, 0), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
     [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
@@ -1073,8 +1073,8 @@ function generate_stimulus(s::UniformNoiseNoBins)
     nfft = nsamples(s)
 
     # generate spectrum completely randomly without bins
-    # amplitudes are uniformly-distributed between unfilled_db and 0.
-    spect = rand(Uniform(unfilled_db, 0), nfft ÷ 2)
+    # amplitudes are uniformly-distributed between UNFILLED_DB and 0.
+    spect = rand(Uniform(UNFILLED_DB, 0), nfft ÷ 2)
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -1091,7 +1091,7 @@ function generate_stimulus(s::GaussianNoiseNoBins)
     nfft = nsamples(s)
 
     # generate spectrum completely randomly without bins
-    # amplitudes are uniformly-distributed between unfilled_db and 0.
+    # amplitudes are uniformly-distributed between UNFILLED_DB and 0.
     spect = rand(Normal(s.amplitude_mean, sqrt(s.amplitude_var)), nfft ÷ 2)
 
     # Synthesize Audio
@@ -1125,7 +1125,7 @@ function generate_stimulus(s::UniformPriorWeightedSampling)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = UNFILLED_DB * ones(Int, s.n_bins)
     binned_repr[filled_bins] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
