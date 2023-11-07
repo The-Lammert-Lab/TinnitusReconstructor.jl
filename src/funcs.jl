@@ -165,23 +165,47 @@ function DSP.stft(audio::AbstractSampleBuf{T, I}, args...; kwargs...) where {T, 
 end
 
 """
-    wav2spect(audio_file::String; duration=0.5)
+Crops a signal from `0:duration`, where `duration` is in seconds,
+computes the short-time Fourier transform,
+converts to decibels,
+and then averages across STFT windows.
 
-Load an audio file, crop it to `duration`,
-    then compute and return the short time Fourier transform.
+# Arguments
+- `audio::Union{AbstractSampleBuf, Matrix}`
+- `duration::Real`: duration in seconds
+
+# Example Usage
+```julia
+audio = load(audio_file_path)
+spect = wav2spect(audio; duration = 1.0)
+```
 """
-function wav2spect(audio_file::String; duration = 0.5)
-    audio = load(audio_file)
-    crop_signal!(audio; start = 0, stop = duration)
+function wav2spect end
 
+"""
+    wav2spect(audio::AbstractSampleBuf{T, I}; duration = 0.5) where {T, I}
+"""
+function wav2spect(audio::AbstractSampleBuf{T, I}; duration = 0.5) where {T, I}
+    crop_signal!(audio; start = 0, stop = duration)
     samples = length(audio)
     fs = samplerate(audio)
-
     S = stft(audio, samples ÷ 4, div(samples ÷ 4, 2); nfft = samples - 1, fs = fs,
-        window = hamming)
+    window = hamming)
 
-    return mean(abs.(S); dims = 2)
+    # return mean(abs.(S); dims = 2)
+    return mean(dB.(abs.(S)); dims = 2)
 end
+
+"""
+    wav2spect(audio::Matrix{T}; duration = 0.5, fs = 41000.0) where T
+
+If `audio` is a `Matrix`, try to convert to a `SampleBuf` first.
+"""
+function wav2spect(audio::Matrix{T}; duration = 0.5, fs = 41000.0) where T
+    audio_ = SampleBuf(audio, fs)
+    return wav2spect(audio_; duration)
+end
+
 
 @doc raw"""
     dB(x)

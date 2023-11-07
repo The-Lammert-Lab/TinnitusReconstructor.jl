@@ -15,7 +15,7 @@ n_trials = 100
 
 audio_file = "ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
 
-audio = wav2spect(audio_file)
+audio = wav2spect(load(audio_file))
 
 target_signal = 10 * log10.(audio)
 binned_target_signal = spect2binnedrepr(stimgen, target_signal)

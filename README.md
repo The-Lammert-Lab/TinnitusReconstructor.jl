@@ -29,8 +29,10 @@ stimgen = GaussianPrior(;
 
 Load in the target sound and convert to binned representation
 ```julia
+using FileIO: load
+import LibSndFile
 audio_file = "ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav" # File path.
-audio = wav2spect(audio_file) # Read in file, truncate to 0.5s, convert to spectrum.
+audio = wav2spect(load(audio_file)) # Read in file, truncate to 0.5s, convert to spectrum.
 target_signal = 10 * log10.(audio) # Convert to dB
 
 # Convert to binned representation that matches the number of stimgen bins
