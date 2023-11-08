@@ -1,11 +1,13 @@
 module TinnitusReconstructor
 
+using Reexport
+
 using FFTW
 using LinearAlgebra
 using Statistics, StatsBase
 using PortAudio, SampledSignals
 using FileIO
-using LibSndFile
+@reexport import LibSndFile
 using DSP
 using Memoize
 using FastBroadcast
