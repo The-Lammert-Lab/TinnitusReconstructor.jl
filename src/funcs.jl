@@ -7,15 +7,19 @@ hz2mels(f) = 2595 * log10(1 + (f / 700))
 mels2hz(m) = 700 * (10^(m / 2595) - 1)
 
 """
-    synthesize_audio(X, nfft)
+    synthesize_audio(spect::AbstractVecOrMat, nfft::Integer)
 
-Synthesize audio from spectrum `X`
+Synthesize audio from a frequency spectrum `spect` using a number of FFT points `nfft`.
+
+# Arguments
+- `spect::AbstractVecOrMat`: frequency spectrum
+- `nfft::Integer`: number of FFT points
 """
-function synthesize_audio(X, nfft)
+function synthesize_audio(spect::AbstractVecOrMat, nfft::Integer)
     phase = 2π * (rand(nfft ÷ 2) .- 0.5) # Assign random phase to freq spec
-    s = @.. (10^(X / 10)) * cis(phase) # Convert dB to amplitudes
+    s = @.. (10^(spect / 10)) * cis(phase) # Convert dB to amplitudes
     ss = vcat(1, s)
-    return irfft(ss, 2 * length(ss) - 1) #transform from freq to time domain
+    return irfft(ss, 2 * size(ss, 1) - 1) #transform from freq to time domain
 end
 
 """
