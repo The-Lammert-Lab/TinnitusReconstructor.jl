@@ -42,11 +42,12 @@ const BINNED_STIMGEN = [
 
 const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]
 
+@test Base.JLOptions().use_pkgimages == 1
+
 @testset showtiming=true "Stimgen: $(typeof(BINNED_STIMGEN[i]))" for i in eachindex(BINNED_STIMGEN)
     stimgen = BINNED_STIMGEN[i]
     audio_file = "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
     target_signal = wav2spect(load(audio_file))
-    # target_signal = TinnitusReconstructor.dB.(audio)
 
     binned_target_signal = spect2binnedrepr(stimgen, target_signal)
 
