@@ -53,6 +53,7 @@ struct UniformPrior{T <: Real, I <: Integer} <: BinnedStimgen
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert min_bins<=max_bins "`min_bins` cannot be greater than `max_bins`. `min_bins` = $min_bins, `max_bins` = $max_bins."
         @assert max_bins<=n_bins "`max_bins` cannot be greater than `n_bins`. `max_bins` = $max_bins, `n_bins` = $n_bins."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, min_bins, max_bins, n_bins)
     end
@@ -110,6 +111,7 @@ struct GaussianPrior{T <: Real, I <: Integer} <: BinnedStimgen
         @assert all(x -> x > 0,
             [min_freq max_freq duration Fs n_bins n_bins_filled_mean n_bins_filled_var]) "All arguments must be greater than 0"
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins_filled_var, n_bins_filled_mean,
             n_bins)
@@ -161,6 +163,7 @@ struct Bernoulli{T <: Real, I <: Integer} <: BinnedStimgen
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins bin_prob]) "All arguments must be greater than 0"
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert bin_prob<=1 "`bin_prob` must be less than or equal to 1."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, bin_prob, n_bins)
     end
@@ -220,6 +223,7 @@ struct Brimijoin{T <: Real, I <: Integer} <: BinnedStimgen
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert amp_min<amp_max "`amp_min` must be less than `amp_max`."
         @assert amp_step>1 "`amp_step` must be greater than 1."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, amp_min, amp_max, amp_step, n_bins)
     end
@@ -283,6 +287,7 @@ struct BrimijoinGaussianSmoothed{T <: Real, I <: Integer} <: BinnedStimgen
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert amp_min<amp_max "`amp_min` must be less than `amp_max`."
         @assert amp_step>1 "`amp_step` must be greater than 1."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, amp_min, amp_max, amp_step, n_bins)
     end
@@ -340,6 +345,7 @@ struct GaussianNoise{T <: Real, I <: Integer} <: BinnedStimgen
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude mean can be less than 0."
         @assert amplitude_var>=0 "`amplitude_var` cannot be less than 0."
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var, n_bins)
     end
@@ -385,6 +391,7 @@ struct UniformNoise{T <: Real, I <: Integer} <: BinnedStimgen
             n_bins::I) where {T <: Real, I <: Integer}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "All arguments must be greater than 0."
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, n_bins)
     end
@@ -454,6 +461,7 @@ struct UniformPriorWeightedSampling{
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
         @assert min_bins<=max_bins "`min_bins` cannot be greater than `max_bins`. `min_bins` = $min_bins, `max_bins` = $max_bins."
         @assert max_bins<=n_bins "`max_bins` cannot be greater than `n_bins`. `max_bins` = $max_bins, `n_bins` = $n_bins."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
 
         binnums, = freq_bins(new(min_freq, max_freq, duration, Fs, alpha_, min_bins,
@@ -535,6 +543,7 @@ struct PowerDistribution{
             AbstractString}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs n_bins]) "Only amplitude arguments can be less than 0."
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
 
         if isfile(distribution_filepath)
@@ -591,6 +600,7 @@ struct UniformNoiseNoBins{T <: Real} <: Stimgen
             Fs::T) where {T <: Real}
         @assert all(x -> x > 0, [min_freq max_freq duration Fs]) "All arguments must be greater than 0."
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs)
     end
@@ -634,6 +644,7 @@ struct GaussianNoiseNoBins{T <: Real} <: Stimgen
         @assert all(x -> x > 0, [min_freq max_freq duration Fs]) "Only amplitude mean can be less than 0."
         @assert amplitude_var>=0 "`amplitude_var` cannot be less than 0."
         @assert min_freq<=max_freq "`min_freq` cannot be greater than `max_freq`. `min_freq` = $min_freq, `max_freq` = $max_freq."
+        @assert duration > 0 "`duration` must be positive. `duration` = $duration."
         @assert isinteger(Fs * duration) "The product of `Fs` and `duration` (the number of samples) must be an integer."
         return new(min_freq, max_freq, duration, Fs, amplitude_mean, amplitude_var)
     end
