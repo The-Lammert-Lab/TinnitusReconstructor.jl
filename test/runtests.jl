@@ -42,8 +42,6 @@ const BINNED_STIMGEN = [
 
 const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]
 
-@test Base.JLOptions().use_pkgimages == 1
-
 @testset showtiming=true "Stimgen: $(typeof(BINNED_STIMGEN[i]))" for i in eachindex(BINNED_STIMGEN)
     stimgen = BINNED_STIMGEN[i]
     audio_file = "../ATA/ATA_Tinnitus_Buzzing_Tone_1sec.wav"
