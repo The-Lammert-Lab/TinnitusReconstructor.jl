@@ -31,7 +31,6 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
@@ -49,15 +48,6 @@ jobs:
         with:
           version: '1'
       - uses: julia-actions/julia-buildpkg@v1
-      
-      - name: Install FFmpeg
-        run: sudo apt-get install ffmpeg
-
-      - name: Install FFmpeg and libavcodec58
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg libavcodec58
-
       - uses: julia-actions/julia-docdeploy@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
