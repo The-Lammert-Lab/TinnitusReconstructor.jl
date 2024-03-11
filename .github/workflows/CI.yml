@@ -27,11 +27,7 @@ jobs:
           - x64
     steps:
       - run: |
-          sudo apt install -y libasound2 libasound2-plugins
-      - run: sudo apt-get install ffmpeg
-      - run: |
-            sudo apt-get update
-            sudo apt-get install -y ffmpeg libavcodec58
+          rm /home/runner/.julia/artifacts/d587f48a6815c72dec4b083bf297caec7a8e3f4b/lib/alsa-lib/libasound_module_pcm_a52.so
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
         with:
