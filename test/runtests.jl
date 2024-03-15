@@ -37,7 +37,7 @@ const BINNED_STIMGEN = [
         max_bins = 10,
         alpha_ = 1),
     PowerDistribution(; n_bins = n_bins, max_freq = max_freq, min_freq = min_freq,
-        distribution_filepath = "."),
+        distribution_filepath = ".")
 ]
 
 const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]

@@ -19,7 +19,7 @@ makedocs(;
         "Home" => "index.md",
         "Stimulus Generation" => "stimgens.md",
         "Stimulus Generation Methods" => "stimgen_methods.md",
-        "Utility Functions" => "funcs.md",
+        "Utility Functions" => "funcs.md"
     ])
 
 deploydocs(; repo = "github.com/The-Lammert-Lab/TinnitusReconstructor.jl",
