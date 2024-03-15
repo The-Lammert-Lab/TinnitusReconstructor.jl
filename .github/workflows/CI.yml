@@ -26,8 +26,6 @@ jobs:
         arch:
           - x64
     steps:
-      - run: |
-          rm /home/runner/.julia/artifacts/d587f48a6815c72dec4b083bf297caec7a8e3f4b/lib/alsa-lib/libasound_module_pcm_a52.so
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
         with:
