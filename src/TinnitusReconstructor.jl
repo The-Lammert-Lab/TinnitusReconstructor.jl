@@ -5,7 +5,7 @@ using Reexport
 using FFTW
 using LinearAlgebra
 using Statistics, StatsBase
-using PortAudio, SampledSignals
+using SampledSignals
 using FileIO
 @reexport import LibSndFile
 using DSP
