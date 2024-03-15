@@ -28,7 +28,6 @@ jobs:
     steps:
       - run: |
           sudo apt install -y libasound2 libasound2-plugins
-          sudo apt install -y libasound libasound-plugins
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
         with:
