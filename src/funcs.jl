@@ -122,7 +122,7 @@ Return the `n`-dimensional response vector `y` as well as the `stimuli_matrix`
 as well as `nothing` for the binned representation.
 """
 function subject_selection_process(stimuli_matrix::AbstractVecOrMat{T},
-        target_signal::AbstractVector{T}) where {T <: Real}
+                                   target_signal::AbstractVector{T}) where {T <: Real}
     e = stimuli_matrix'target_signal
     y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha = 0.5, beta = 0.5)] .= 1
@@ -133,7 +133,7 @@ end
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 """
 function subject_selection_process(stimuli::AbstractArray{T},
-        target_signal::AbstractMatrix{T}) where {T <: Real}
+                                   target_signal::AbstractMatrix{T}) where {T <: Real}
     return subject_selection_process(stimuli, vec(target_signal))
 end
 
@@ -194,9 +194,8 @@ function wav2spect(audio::AbstractSampleBuf{T, I}; duration = 0.5) where {T, I}
     samples = length(audio)
     fs = samplerate(audio)
     S = stft(audio, samples ÷ 4, div(samples ÷ 4, 2); nfft = samples - 1, fs = fs,
-        window = hamming)
+             window = hamming)
 
-    # return mean(abs.(S); dims = 2)
     return mean(dB.(abs.(S)); dims = 2)
 end
 
@@ -255,3 +254,32 @@ julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
 * [`dB`](@ref)
 """
 invdB(x) = oftype(x / 1, 10)^(x / oftype(x / 1, 10))
+
+"""
+    rescale(X::AbstractVecOrMat{T}) where {T}
+
+Rescales the columns of `X` to between 0 and 1.
+"""
+function rescale(X::AbstractVecOrMat{T}) where {T}
+    (X .- minimum(X; dims = 1)) ./ (maximum(X; dims = 1) - minimum(X; dims = 1))
+end
+
+"""
+Rescales the columns of `X` to between 0 and 1 in place.
+Returns the same type as the input. Supports Vector and Matrix.
+"""
+function rescale! end
+
+"""
+    rescale!(X::AbstractVector{T}) where {T}
+"""
+function rescale!(X::AbstractVector{T}) where {T}
+    X[:] = (X .- minimum(X)) ./ (maximum(X) - minimum(X))
+end
+
+"""
+    rescale!(X::AbstractMatrix{T}) where {T}
+"""
+function rescale!(X::AbstractMatrix{T}) where {T}
+    X[:, :] = (X .- minimum(X; dims = 1)) ./ (maximum(X; dims = 1) - minimum(X; dims = 1))
+end
