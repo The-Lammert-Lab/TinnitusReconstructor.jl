@@ -36,6 +36,7 @@ export cs
 export gs
 export spect2binnedrepr
 export binnedrepr2spect
+export binnedrepr2wav
 export wav2spect
 
 end
