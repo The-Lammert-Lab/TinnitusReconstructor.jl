@@ -731,7 +731,13 @@ Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`.
     `binned_repr_matrix` = nothing if s >: BinnedStimgen.
 """
 function generate_stimuli_matrix(s::SG, n_trials::I) where {SG <: Stimgen, I <: Integer}
-    @assert n_trials>1 "`n_trials` must be greater than 1. To generate one trial, use `generate_stimulus()`."
+    if n_trials <= 0
+        mt = Array{Float64}(undef,0)
+        return mt, nothing, mt, mt
+    elseif n_trials == 1
+        stim, Fs, spect, _ = generate_stimulus(s)
+        return stim, Fs, spect, nothing
+    end
 
     # Generate first stimulus
     stim, Fs, spect, _ = generate_stimulus(s)
@@ -758,7 +764,13 @@ Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`.
 """
 function generate_stimuli_matrix(s::BS,
                                  n_trials::I) where {BS <: BinnedStimgen, I <: Integer}
-    @assert n_trials>1 "`n_trials` must be greater than 1. To generate one trial, use `generate_stimulus()`."
+    if n_trials <= 0
+        mt = Array{Float64}(undef,0)
+        return mt, nothing, mt, mt
+    elseif n_trials == 1
+        stim, Fs, spect, binned_repr, _ = generate_stimulus(s)
+        return stim, Fs, spect, binned_repr
+    end
 
     # Generate first stimulus
     binned_repr_matrix = zeros(s.n_bins, n_trials)
