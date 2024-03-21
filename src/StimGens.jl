@@ -1018,7 +1018,7 @@ function generate_stimulus(s::UniformPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = unfilled_db * ones(s.n_bins)
     binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
@@ -1041,7 +1041,7 @@ function generate_stimulus(s::GaussianPrior)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = unfilled_db * ones(s.n_bins)
     binned_repr[bins_to_fill] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
@@ -1053,7 +1053,7 @@ function generate_stimulus(s::Bernoulli)
     spect = empty_spectrum(s)
 
     # Get binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = unfilled_db * ones(s.n_bins)
     binned_repr[rand(s.n_bins) .< s.bin_prob] .= 0
 
     # Set spectrum ranges corresponding to bins to bin level.
@@ -1212,7 +1212,7 @@ function generate_stimulus(s::UniformPriorWeightedSampling)
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
-    binned_repr = unfilled_db * ones(Int, s.n_bins)
+    binned_repr = unfilled_db * ones(s.n_bins)
     binned_repr[filled_bins] .= 0
 
     return stim, Fs, spect, binned_repr, frequency_vector
