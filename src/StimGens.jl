@@ -8,6 +8,9 @@ using StatsBase: mean
 "dB level of unfilled bins"
 const unfilled_db = -100
 
+"dB level of filled bins"
+const filled_db = 0
+
 "Abstract supertype for all stimulus generation."
 abstract type Stimgen end
 
@@ -1011,15 +1014,15 @@ function generate_stimulus(s::UniformPrior)
     n_bins_to_fill = rand(DiscreteUniform(s.min_bins, s.max_bins))
     bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace = false)
 
-    # Set spectrum ranges corresponding to bins to 0dB.
-    [spect[binnum .== bins_to_fill[i]] .= 0 for i in 1:n_bins_to_fill]
+    # Set spectrum ranges corresponding to bins to filled_db.
+    [spect[binnum .== bins_to_fill[i]] .= filled_db for i in 1:n_bins_to_fill]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
     binned_repr = unfilled_db * ones(s.n_bins)
-    binned_repr[bins_to_fill] .= 0
+    binned_repr[bins_to_fill] .= filled_db
 
     return stim, Fs, spect, binned_repr, frequency_vector
 end
@@ -1034,15 +1037,15 @@ function generate_stimulus(s::GaussianPrior)
     n_bins_to_fill = round(Int, rand(d))
     bins_to_fill = sample(1:(s.n_bins), n_bins_to_fill; replace = false)
 
-    # Set spectrum ranges corresponding to bins to 0dB.
-    [spect[binnum .== bins_to_fill[i]] .= 0 for i in 1:n_bins_to_fill]
+    # Set spectrum ranges corresponding to bins to filled_db dB.
+    [spect[binnum .== bins_to_fill[i]] .= filled_db for i in 1:n_bins_to_fill]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
     binned_repr = unfilled_db * ones(s.n_bins)
-    binned_repr[bins_to_fill] .= 0
+    binned_repr[bins_to_fill] .= filled_db
 
     return stim, Fs, spect, binned_repr, frequency_vector
 end
@@ -1054,7 +1057,7 @@ function generate_stimulus(s::Bernoulli)
 
     # Get binned representation
     binned_repr = unfilled_db * ones(s.n_bins)
-    binned_repr[rand(s.n_bins) .< s.bin_prob] .= 0
+    binned_repr[rand(s.n_bins) .< s.bin_prob] .= filled_db
 
     # Set spectrum ranges corresponding to bins to bin level.
     [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
@@ -1143,7 +1146,7 @@ function generate_stimulus(s::UniformNoise)
     spect = empty_spectrum(s)
 
     # Get binned representation from random values of Uniform distribution
-    binned_repr = rand(Uniform(unfilled_db, 0), s.n_bins)
+    binned_repr = rand(Uniform(unfilled_db, filled_db), s.n_bins)
 
     # Set spectrum ranges corresponding to bin levels.
     [spect[binnum .== i] .= binned_repr[i] for i in 1:(s.n_bins)]
@@ -1160,8 +1163,8 @@ function generate_stimulus(s::UniformNoiseNoBins)
     nfft = nsamples(s)
 
     # generate spectrum completely randomly without bins
-    # amplitudes are uniformly-distributed between unfilled_db and 0.
-    spect = rand(Uniform(unfilled_db, 0), nfft ÷ 2)
+    # amplitudes are uniformly-distributed between unfilled_db and filled_db.
+    spect = rand(Uniform(unfilled_db, filled_db), nfft ÷ 2)
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
@@ -1178,7 +1181,7 @@ function generate_stimulus(s::GaussianNoiseNoBins)
     nfft = nsamples(s)
 
     # generate spectrum completely randomly without bins
-    # amplitudes are uniformly-distributed between unfilled_db and 0.
+    # amplitudes are uniformly-distributed between unfilled_db and filled_db.
     spect = rand(Normal(s.amplitude_mean, sqrt(s.amplitude_var)), nfft ÷ 2)
 
     # Synthesize Audio
@@ -1206,14 +1209,14 @@ function generate_stimulus(s::UniformPriorWeightedSampling)
                          replace = false)
 
     # fill those bins
-    [spect[binnum .== bin] .= 0 for bin in eachindex(filled_bins)]
+    [spect[binnum .== bin] .= filled_db for bin in eachindex(filled_bins)]
 
     # Synthesize Audio
     stim = synthesize_audio(spect, nfft)
 
     # get the binned representation
     binned_repr = unfilled_db * ones(s.n_bins)
-    binned_repr[filled_bins] .= 0
+    binned_repr[filled_bins] .= filled_db
 
     return stim, Fs, spect, binned_repr, frequency_vector
 end
