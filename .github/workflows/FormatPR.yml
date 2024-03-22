@@ -13,7 +13,7 @@ jobs:
       - name: Install JuliaFormatter and format
         run: |
           julia  -e 'import Pkg; Pkg.add("JuliaFormatter")'
-          julia  -e 'using JuliaFormatter; format(".")'
+          julia  -e 'using JuliaFormatter; format(".", SciMLStyle())'
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v3
