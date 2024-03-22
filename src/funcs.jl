@@ -122,7 +122,7 @@ Return the `n`-dimensional response vector `y` as well as the `stimuli_matrix`
 as well as `nothing` for the binned representation.
 """
 function subject_selection_process(stimuli_matrix::AbstractVecOrMat{T},
-                                   target_signal::AbstractVector{T}) where {T <: Real}
+        target_signal::AbstractVector{T}) where {T <: Real}
     e = stimuli_matrix'target_signal
     y = -ones(Int, size(e))
     y[e .>= quantile(e, 0.5; alpha = 0.5, beta = 0.5)] .= 1
@@ -133,7 +133,7 @@ end
     subject_selection_process(stimuli::AbstractArray{T}, target_signal::AbstractMatrix{T}) where {T<:Real}
 """
 function subject_selection_process(stimuli::AbstractArray{T},
-                                   target_signal::AbstractMatrix{T}) where {T <: Real}
+        target_signal::AbstractMatrix{T}) where {T <: Real}
     return subject_selection_process(stimuli, vec(target_signal))
 end
 
@@ -194,7 +194,7 @@ function wav2spect(audio::AbstractSampleBuf{T, I}; duration = 0.5) where {T, I}
     samples = length(audio)
     fs = samplerate(audio)
     S = stft(audio, samples ÷ 4, div(samples ÷ 4, 2); nfft = samples - 1, fs = fs,
-             window = hamming)
+        window = hamming)
 
     return mean(dB.(abs.(S)); dims = 2)
 end
