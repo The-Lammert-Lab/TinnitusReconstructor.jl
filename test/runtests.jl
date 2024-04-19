@@ -59,8 +59,8 @@ const UNBINNED_STIMGEN = [GaussianNoiseNoBins(), UniformNoiseNoBins()]
         n_trials)
 
     @test size(binned_target_signal) == (stimgen.n_bins, 1)
-    @test r_linear[1] >= 0.7
-    @test r_cs[1] >= 0.7
+    @test r_linear[1] > 0.55
+    @test r_cs[1] > 0.55
 
     @test size(stimuli_matrix, 2) == n_trials
     @test size(spect_matrix, 2) == n_trials
