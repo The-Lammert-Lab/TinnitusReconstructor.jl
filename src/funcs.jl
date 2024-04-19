@@ -289,4 +289,4 @@ end
 
 Generate a white noise waveform according to the sample rate `Fs` and duration `dur`.
 """
-white_noise(Fs::T, dur::Q) where {T, Q} = rand(Normal(), Int(Fs*dur))
+white_noise(Fs::T, dur::Q) where {T, Q} = rand(Normal(), Int(Fs * dur))
