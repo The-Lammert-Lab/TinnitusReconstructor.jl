@@ -698,6 +698,13 @@ nsamples(s::SG) where {SG <: Stimgen} = convert(Int, fs(s) * s.duration)
 
 # Universal functions
 """
+    white_nosie(s::SG) where {SG <: Stimgen}
+
+Generate a white noise waveform according to the sample rate and duration in `s`.
+"""
+white_noise(s::SG) where {SG <: Stimgen} = rand(Normal(), nsamples(s))
+
+"""
     subject_selection_process(s::SG, target_signal::AbstractVector{T}, n_trials::I) where {SG<:Stimgen,T<:Real,I<:Integer}
 
 Perform the synthetic subject decision process,
@@ -737,7 +744,7 @@ Returns `stimuli_matrix`, `Fs`, `spect_matrix`, `binned_repr_matrix`.
 function generate_stimuli_matrix(s::SG, n_trials::I) where {SG <: Stimgen, I <: Integer}
     if n_trials <= 0
         mt = Array{Float64}(undef, 0)
-        return mt, nothing, mt, mt
+        return mt, nothing, mt, nothing
     elseif n_trials == 1
         stim, Fs, spect, _ = generate_stimulus(s)
         return stim, Fs, spect, nothing

@@ -283,3 +283,10 @@ end
 function rescale!(X::AbstractMatrix{T}) where {T}
     X[:, :] = (X .- minimum(X; dims = 1)) ./ (maximum(X; dims = 1) - minimum(X; dims = 1))
 end
+
+"""
+    white_noise(Fs::T, dur::Q) where {T, Q}
+
+Generate a white noise waveform according to the sample rate `Fs` and duration `dur`.
+"""
+white_noise(Fs::T, dur::Q) where {T, Q} = rand(Normal(), Int(Fs*dur))
