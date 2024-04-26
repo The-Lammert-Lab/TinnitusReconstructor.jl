@@ -859,7 +859,7 @@ Returns an `n_trials x n_bins` array containing the amplitude of the spectrum in
     where `n_trials` = size(binned_repr, 2).
 """
 function spect2binnedrepr(s::BS, spect::AbstractVecOrMat{T};
-        n_bins::I = 0) where {BS <: BinnedStimgen, T, I <: Integer}
+        n_bins::I = 0) where {BS <: BinnedStimgen, T <: Real, I <: Integer}
     if n_bins < 2
         n_bins = s.n_bins
     end
@@ -888,7 +888,7 @@ Returns an `n_frequencies x n_trials` spectral array, where `n_trials` = size(bi
 """
 function binnedrepr2spect(s::BS,
         binned_repr::AbstractArray{T};
-        n_bins::I = 0) where {BS <: BinnedStimgen, T, I <: Integer}
+        n_bins::I = 0) where {BS <: BinnedStimgen, T <: Real, I <: Integer}
     if n_bins < 2
         n_bins = s.n_bins
     end
@@ -905,16 +905,16 @@ end
 
 """
     binnedrepr2wav(s::BS, binned_repr::AbstractVecOrMat{T}, mult, binrange,
-    new_n_bins::I = 256) where {BS <: BinnedStimgen, I <: Integer, T}
+    new_n_bins::I = 256) where {BS <: BinnedStimgen, I <: Integer, T <: Real}
 
-Converts a binned spectral representation into a waveform 
+Converts a binned representation into a waveform 
 by enhancing the resolution (to `new_n_bins`) via interpolation, 
 sharpening the peaks (`mult`), and rescaling the dynamic range (`binrange`).
 
 Returns a waveform and the associated frequency spectrum.
 """
 function binnedrepr2wav(s::BS, binned_repr::AbstractVecOrMat{T}, mult, binrange,
-        new_n_bins::I = 256) where {BS <: BinnedStimgen, I <: Integer, T}
+        new_n_bins::I = 256) where {BS <: BinnedStimgen, I <: Integer, T <: Real}
     @assert(new_n_bins>s.n_bins,
         "New number of bins must be greater than current number of bins")
 
@@ -945,6 +945,21 @@ function binnedrepr2wav(s::BS, binned_repr::AbstractVecOrMat{T}, mult, binrange,
     wav = synthesize_audio(spect, nsamples(s))
 
     return wav, spect
+end
+
+"""
+    binnedrepr2wav(s::BS, binned_repr::AbstractVecOrMat{T}; min_db::Real = -20) where {BS <: BinnedStimgen, I <: Integer, T <: Real}
+
+Converts a binned representation to a waveform after rescaling to between `min_db` and 0.
+
+Returns only the waveform.
+"""
+function binnedrepr2wav(s::BS, binned_repr::AbstractVecOrMat{T};
+        min_db::Real = -20) where {BS <: BinnedStimgen, T <: Real}
+    # Rescale and get spectrum
+    rescale!(binned_repr, min_db, 0)
+    recon_spectrum = binnedrepr2spect(s, binned_repr)
+    return synthesize_audio(recon_spectrum, nsamples(s))
 end
 
 """

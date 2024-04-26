@@ -256,37 +256,46 @@ julia> TinnitusReconstructor.invdB.([-100, 0, 1, 2, 100])
 invdB(x) = oftype(x / 1, 10)^(x / oftype(x / 1, 10))
 
 """
-    rescale(X::AbstractVecOrMat{T}) where {T}
+    rescale(X::AbstractVecOrMat{T}, min_val::Real = 0, max_val::Real = 1) where {T <: Real}
 
-Rescales the columns of `X` to between 0 and 1.
+Rescales the columns of `X` to between `min_val` and `max_val`.
 """
-function rescale(X::AbstractVecOrMat{T}) where {T}
-    (X .- minimum(X; dims = 1)) ./ (maximum(X; dims = 1) - minimum(X; dims = 1))
+function rescale(
+        X::AbstractVecOrMat{T}, min_val::Real = 0, max_val::Real = 1) where {T <: Real}
+    @assert(min_val<=max_val, "Lower bound must be less than or equal to upper bound")
+    (X .- minimum(X; dims = 1)) ./ (maximum(X; dims = 1) - minimum(X; dims = 1)) .*
+    (max_val - min_val) .+ min_val
 end
 
 """
-Rescales the columns of `X` to between 0 and 1 in place.
+Rescales the columns of `X` to between `min_val` and `max_val` in place.
 Returns the same type as the input. Supports Vector and Matrix.
 """
 function rescale! end
 
 """
-    rescale!(X::AbstractVector{T}) where {T}
+    rescale!(X::AbstractVector{T}, min_val::Real = 0, max_Val::Real = 1) where {T <: Real}
 """
-function rescale!(X::AbstractVector{T}) where {T}
-    X[:] = (X .- minimum(X)) ./ (maximum(X) - minimum(X))
+function rescale!(
+        X::AbstractVector{T}, min_val::Real = 0, max_val::Real = 1) where {T <: Real}
+    @assert(min_val<=max_val, "Lower bound must be less than or equal to upper bound")
+    X[:] = (X .- minimum(X)) ./ (maximum(X) - minimum(X)) .* (max_val - min_val) .+ min_val
 end
 
 """
     rescale!(X::AbstractMatrix{T}) where {T}
 """
-function rescale!(X::AbstractMatrix{T}) where {T}
-    X[:, :] = (X .- minimum(X; dims = 1)) ./ (maximum(X; dims = 1) - minimum(X; dims = 1))
+function rescale!(
+        X::AbstractMatrix{T}, min_val::Real = 0, max_val::Real = 1) where {T <: Real}
+    @assert(min_val<=max_val, "Lower bound must be less than or equal to upper bound")
+    X[:, :] = (X .- minimum(X; dims = 1)) ./
+              (maximum(X; dims = 1) - minimum(X; dims = 1)) .* (max_val - min_val) .+
+              min_val
 end
 
 """
-    white_noise(Fs::T, dur::Q) where {T, Q}
+    white_noise(Fs::T, dur::Q) where {T <: Real, Q <: Real}
 
 Generate a white noise waveform according to the sample rate `Fs` and duration `dur`.
 """
-white_noise(Fs::T, dur::Q) where {T, Q} = rand(Normal(), Int(Fs * dur))
+white_noise(Fs::T, dur::Q) where {T <: Real, Q <: Real} = rand(Normal(), Int(Fs * dur))
