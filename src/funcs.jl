@@ -299,3 +299,69 @@ end
 Generate a white noise waveform according to the sample rate `Fs` and duration `dur`.
 """
 white_noise(Fs::T, dur::Q) where {T <: Real, Q <: Real} = rand(Normal(), Int(Fs * dur))
+
+"""
+    semitones(init_freq::Real, n::Integer = 12, dir::String = "up")
+
+Generates a `n+1` long vector of frequency values spaced by semitones starting at `init_freq`.
+    `dir` can be "up" or "down" specifying if tones are ascending or descending from `init_freq`.
+"""
+function semitones(init_freq::Real, n::Integer = 12, dir::String = "up")
+    tones = zeros(n + 1)
+    tones[1] = init_freq
+    for i in eachindex(tones)[2:end]
+        if dir === "up"
+            tones[i] = 2^(1 / 12) * tones[i - 1]
+        elseif dir === "down"
+            tones[i] = 2^(-1 / 12) * tones[i - 1]
+        else
+            error("Unknown direction: '$dir' specified")
+        end
+    end
+    return tones
+end
+
+"""
+    gen_octaves(min_freq::Real, max_freq::Real, n_in_oct::Integer = 0, spacing_type::String = "semitone")
+
+Returns a vector of octaves between `min_freq` and `max_freq` with `n_in_oct` values between octaves.
+    Spacing type can be "semitone" or "linear", indicating the distance between intra-octave values.
+"""
+function gen_octaves(min_freq::Real, max_freq::Real, n_in_oct::Integer = 0,
+        spacing_type::String = "semitone")
+    n_octs = convert(Int, floor(log2(max_freq / min_freq))) # Number of octaves between min and max
+    oct_vals = min_freq * 2 .^ (0:n_octs) # Octave frequency values
+
+    freqs = zeros(length(oct_vals) + (n_in_oct * n_octs))
+    oct_marks = 1:(n_in_oct + 1):length(freqs)
+
+    for i in 1:n_octs
+        if spacing_type === "linear"
+            freqs[oct_marks[i]:(oct_marks[i] + n_in_oct + 1)] .= range(
+                oct_vals[i], oct_vals[i + 1], n_in_oct + 2)
+        elseif spacing_type === "semitone"
+            half_steps = semitones(oct_vals[i])
+            inds = range(1, length(half_steps), n_in_oct + 2)
+
+            try
+                inds = convert.(Int, inds)
+            catch
+                error("Unable to break semitone scaling into $n_in_oct intervals inside an octave")
+            end
+
+            freqs[oct_marks[i]:(oct_marks[i] + n_in_oct + 1)] .= half_steps[inds]
+        else
+            error("Invalid spacing_type value. Valid options are: 'semitone', 'linear'.")
+        end
+    end
+    return freqs
+end
+
+"""
+    pure_tone(tone_freq::Real, dur::Real = 0.5, Fs::Real = 44100)
+
+Returns a `dur`-second long pure tone waveform at `tone_freq` frequency and sample rate `Fs`.
+"""
+function pure_tone(tone_freq::Real, dur::Real = 0.5, Fs::Real = 44100)
+    sin.(2π * tone_freq * (0:(1 / Fs):dur))
+end
